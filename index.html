@@ -296,10 +296,6 @@ label input{margin-top:6px}
 const SUPABASE_URL = 'https://actpttkngkmjmzhukxva.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjdHB0dGtuZ2ttam16aHVreHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzg3ODcsImV4cCI6MjA4ODg1NDc4N30.bTB_g1F2bSf5G80cEpII9KUwimscyKt7a3Ll9NFNG2w';
 
-// Accounts are username + password. Supabase Auth needs an email, so one is derived from the username
-// (<username>@EMAIL_DOMAIN). Nothing is ever sent to it. Avoid example.com / *.test: Supabase rejects those.
-const EMAIL_DOMAIN = 'palchess.app';
-
 // Time controls (seconds per side). 0 = untimed.
 const TC = [
   {v: 0,   name: 'Untimed',  sub: ''},
@@ -523,8 +519,31 @@ function setAuthMode(m) {
 }
 function authMsg(t, bad) { const m = $('auth-msg'); m.textContent = t; m.className = 'msg' + (bad ? ' bad' : ''); }
 
-const EMAIL_OFF_HELP = 'The Email provider is switched off in Supabase. Turn it on (Authentication, Sign In / Providers, Email) and keep "Confirm email" off. No emails are sent.';
-const emailFor = uname => uname.toLowerCase() + '@' + EMAIL_DOMAIN;
+const ANON_OFF_HELP = 'Turn on "Allow anonymous sign-ins" in Supabase (Authentication, Sign In / Providers). Email can stay off.';
+const NOT_SET_UP = 'The database is not set up yet. Run setup.sql in the Supabase SQL editor.';
+
+// Accounts are username + password, stored in the database (bcrypt). Each browser keeps an anonymous
+// Supabase session; logging in links that session to your account. No email is involved.
+function dbMsg(error) {
+  const m = (error && error.message) || 'Something went wrong.';
+  if (/could not find the function|schema cache|does not exist/i.test(m)) return NOT_SET_UP;
+  if (/anonymous/i.test(m) && /disabled|not enabled/i.test(m)) return ANON_OFF_HELP;
+  return m;
+}
+
+async function ensureSession() {
+  const {data} = await sb.auth.getSession();
+  if (data && data.session) return data.session;
+  const r = await sb.auth.signInAnonymously();
+  if (r.error) throw new Error(dbMsg(r.error));
+  return r.data.session;
+}
+
+// Which account (if any) is this browser session signed in to?
+async function syncAccount() {
+  const {data} = await sb.rpc('me');
+  await handleUser(data ? {id: data} : null);
+}
 
 async function submitAuth(e) {
   e.preventDefault();
@@ -534,25 +553,17 @@ async function submitAuth(e) {
   btn.disabled = true; authMsg('');
   try {
     if (!/^[A-Za-z0-9_]{3,20}$/.test(uname)) throw new Error('Usernames are 3–20 letters, numbers or underscores.');
+    if (authMode === 'up' && pass.length < 6) throw new Error('Use a password with at least 6 characters.');
+    await ensureSession();
     if (authMode === 'in') {
-      const {error} = await sb.auth.signInWithPassword({email: emailFor(uname), password: pass});
-      if (error) {
-        if (/disabled/i.test(error.message)) throw new Error(EMAIL_OFF_HELP);
-        throw new Error(/invalid login/i.test(error.message) ? 'Wrong username or password.' : error.message);
-      }
+      const {data, error} = await sb.rpc('login', {uname, pw: pass});
+      if (error) throw new Error(dbMsg(error));
+      if (!data) throw new Error('Wrong username or password.');
     } else {
-      if (pass.length < 6) throw new Error('Use a password with at least 6 characters.');
-      const chk = await sb.rpc('username_available', {name: uname});
-      if (chk.error) throw new Error('The database is not set up yet. Run setup.sql in the Supabase SQL editor.');
-      if (!chk.data) throw new Error('That username is taken.');
-      const {data, error} = await sb.auth.signUp({email: emailFor(uname), password: pass, options: {data: {username: uname}}});
-      if (error) {
-        if (/disabled/i.test(error.message)) throw new Error(EMAIL_OFF_HELP);
-        if (/invalid/i.test(error.message)) throw new Error('Supabase rejected the generated address. Change EMAIL_DOMAIN at the top of index.html.');
-        throw error;
-      }
-      if (!data.session) authMsg('Account created, but Supabase still wants email confirmation. Turn off "Confirm email" in Auth, Providers, Email, then sign in.', true);
+      const {error} = await sb.rpc('register', {uname, pw: pass});
+      if (error) throw new Error(dbMsg(error));
     }
+    await syncAccount();
   } catch (err) {
     authMsg(err.message || 'Something went wrong.', true);
   } finally {
@@ -565,24 +576,20 @@ function changePassword() {
     {label: 'Save password', cls: 'primary', onClick: root => {
       const v = root.querySelector('#np').value;
       if (v.length < 6) { toast('Use at least 6 characters.', true); return false; }
-      sb.auth.updateUser({password: v}).then(r => toast(r.error ? r.error.message : 'Password updated.', !!r.error));
+      sb.rpc('change_password', {pw: v}).then(r => toast(r.error ? dbMsg(r.error) : 'Password updated.', !!r.error));
     }},
     {label: 'Cancel'}
   ]);
 }
 
 async function signOut() {
-  await sb.auth.signOut();
+  await sb.rpc('logout');       // unlink this browser from the account (the anonymous session stays)
+  await handleUser(null);
 }
 
 async function loadProfile() {
   if (!S.user) return;
-  let {data} = await sb.from('profiles').select('*').eq('id', S.user.id).maybeSingle();
-  if (!data) {
-    const uname = (S.user.user_metadata && S.user.user_metadata.username) || ('player_' + S.user.id.slice(0, 8));
-    await sb.from('profiles').insert({id: S.user.id, username: uname});
-    ({data} = await sb.from('profiles').select('*').eq('id', S.user.id).maybeSingle());
-  }
+  const {data} = await sb.from('profiles').select('*').eq('id', S.user.id).maybeSingle();
   S.profile = data;
   if (data) PC[data.id] = data;
 }
@@ -1708,11 +1715,8 @@ function bindStatic() {
 (async function init() {
   bindStatic();
   const {data} = await sb.auth.getSession();
-  const session = data && data.session;
-  if (session) await handleUser(session.user); else showView('auth');
-  sb.auth.onAuthStateChange((event, sess) => {
-    if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') setTimeout(() => handleUser(sess ? sess.user : null), 0);
-  });
+  if (data && data.session) await syncAccount(); else showView('auth');
+  if (!S.user && !S.guest) showView('auth');   // session exists but isn't linked to an account
 })();
 
 })();
