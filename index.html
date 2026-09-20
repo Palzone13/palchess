@@ -167,6 +167,8 @@ label input{margin-top:6px}
 .pbar .clk.low{color:#ff9d95}
 .pbar .clk.run.low{background:var(--danger);color:#fff}
 #friend-in{flex:1;min-width:0;width:auto}
+.sq-badge{position:absolute;top:2px;right:2px;z-index:4;display:flex;align-items:center;justify-content:center;width:calc(var(--bs) / 8 * .38);height:calc(var(--bs) / 8 * .38);border-radius:50%;background:var(--panel);box-shadow:0 0 0 2px var(--line),0 2px 6px rgba(0,0,0,.45);font-size:calc(var(--bs) / 8 * .24);line-height:1;pointer-events:none}
+.moves{position:relative}
 .friends{margin-bottom:28px}
 .friends .glist:empty{display:none}
 
@@ -521,6 +523,7 @@ function setAuthMode(m) {
 }
 function authMsg(t, bad) { const m = $('auth-msg'); m.textContent = t; m.className = 'msg' + (bad ? ' bad' : ''); }
 
+const EMAIL_OFF_HELP = 'The Email provider is switched off in Supabase. Turn it on (Authentication, Sign In / Providers, Email) and keep "Confirm email" off. No emails are sent.';
 const emailFor = uname => uname.toLowerCase() + '@' + EMAIL_DOMAIN;
 
 async function submitAuth(e) {
@@ -533,7 +536,10 @@ async function submitAuth(e) {
     if (!/^[A-Za-z0-9_]{3,20}$/.test(uname)) throw new Error('Usernames are 3–20 letters, numbers or underscores.');
     if (authMode === 'in') {
       const {error} = await sb.auth.signInWithPassword({email: emailFor(uname), password: pass});
-      if (error) throw new Error(/invalid login/i.test(error.message) ? 'Wrong username or password.' : error.message);
+      if (error) {
+        if (/disabled/i.test(error.message)) throw new Error(EMAIL_OFF_HELP);
+        throw new Error(/invalid login/i.test(error.message) ? 'Wrong username or password.' : error.message);
+      }
     } else {
       if (pass.length < 6) throw new Error('Use a password with at least 6 characters.');
       const chk = await sb.rpc('username_available', {name: uname});
@@ -541,7 +547,7 @@ async function submitAuth(e) {
       if (!chk.data) throw new Error('That username is taken.');
       const {data, error} = await sb.auth.signUp({email: emailFor(uname), password: pass, options: {data: {username: uname}}});
       if (error) {
-        if (/disabled/i.test(error.message)) throw new Error('Sign-ups are switched off in Supabase. Enable the Email provider and keep "Confirm email" off.');
+        if (/disabled/i.test(error.message)) throw new Error(EMAIL_OFF_HELP);
         if (/invalid/i.test(error.message)) throw new Error('Supabase rejected the generated address. Change EMAIL_DOMAIN at the top of index.html.');
         throw error;
       }
@@ -1184,6 +1190,7 @@ function renderBoard(g) {
   const b = $('board');
   if (!g) { b.innerHTML = ''; return; }
   const last = S.review ? lastOf(g) : S.last;
+  const an = S.review && S.review.ply > 0 && S.review.analysis ? S.review.analysis[S.review.ply] : null;
   const brd = g.board();
   const chk = g.in_check() ? findKing(brd, g.turn()) : null;
   const can = canInteract();
@@ -1201,6 +1208,7 @@ function renderBoard(g) {
       let inner = '';
       if (c === 0) inner += `<i class="co rk">${rk + 1}</i>`;
       if (r === 7) inner += `<i class="co fl">${FILES[f]}</i>`;
+      if (an && last && sq === last.to) inner += `<span class="sq-badge ${an.cls}" title="${esc(an.label)}. Best move: ${esc(an.best || '-')}" aria-label="${esc(an.label)}">${an.emoji}</span>`;
       if (p) inner += `<span class="pc ${p.color}"${can && ownsPiece(p) ? ' draggable="true"' : ''}>${GLYPH[p.type]}</span>`;
       html += `<div class="${cls}" data-sq="${sq}">${inner}</div>`;
     }
@@ -1302,7 +1310,10 @@ function renderSide(vg) {
 
   const h = g.history(), total = h.length;
   const st = $('status');
-  if (S.review) st.textContent = S.review.ply === 0 ? 'Overview: starting position.' : `Overview: after move ${S.review.ply} of ${total}.`;
+  if (S.review) {
+    const an = S.review.analysis && S.review.analysis[S.review.ply];
+    st.textContent = S.review.ply === 0 ? 'Overview: starting position.' : `Overview: after move ${S.review.ply} of ${total}.${an ? ' ' + an.label + '.' : ''}`;
+  }
   else st.textContent = statusText();
   st.className = 'status' + (S.over ? ' done' : '');
 
@@ -1327,7 +1338,10 @@ function renderSide(vg) {
   const ml = $('moves');
   ml.innerHTML = mv;
   const cur = S.review && ml.querySelector('.cur');
-  if (cur) ml.scrollTop = Math.max(0, cur.offsetTop - ml.clientHeight / 2); else if (!S.review) ml.scrollTop = ml.scrollHeight;
+  if (cur) {
+    const cr = cur.getBoundingClientRect(), lr = ml.getBoundingClientRect();
+    ml.scrollTop += (cr.top - lr.top) - (ml.clientHeight - cr.height) / 2;
+  } else if (!S.review) ml.scrollTop = ml.scrollHeight;
 
   const c = $('controls');
   c.innerHTML = '';
