@@ -227,6 +227,13 @@ label input{margin-top:6px}
 .alert .aclose:hover{color:var(--text);background:var(--line)}
 @keyframes alert-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
 
+/* PAL admin analysis menu */
+.admin-panel{position:fixed;top:64px;right:16px;z-index:66;width:min(390px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--gold);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.55);padding:18px}
+.admin-panel h3{margin-bottom:6px}
+.admin-panel .admin-move{font:800 30px var(--f-head);color:var(--gold);margin:10px 0}
+.admin-panel .admin-meta{color:var(--muted);font-size:13px;margin-bottom:14px}
+.admin-panel .admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+
 /* modal + toast */
 .scrim{position:fixed;inset:0;background:rgba(6,12,18,.66);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
 .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(400px,100%)}
@@ -261,6 +268,7 @@ label input{margin-top:6px}
   <div class="hright">
     <button class="btn ghost sm bell hidden" id="btn-bell" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Notifications"><span aria-hidden="true">🔔</span><span class="badge hidden" id="bell-badge">0</span></button>
     <button class="btn ghost sm" id="btn-sound" type="button" aria-pressed="false"></button>
+    <button class="btn ghost sm hidden" id="btn-admin" type="button" aria-haspopup="dialog">Admin</button>
     <div class="userbox" id="userbox"></div>
   </div>
 </header>
@@ -616,12 +624,16 @@ const S = {
   sfxPly: -1, endPlayed: null, lowSec: 0, unread: 0,
   notes: [], pending: {friends: [], challenges: []}, notesTimer: null,   // notification centre
   mm: null,                                                                // quick-match search in progress
-  botElo: 0, botShown: 0, botName: '', botMatchId: null, botResultSettled: false                                                   // set when playing a quick-match bot
+  botElo: 0, botShown: 0, botName: '', botMatchId: null, botResultSettled: false,                                                   // set when playing a quick-match bot
+  adminOpen: false, adminSuggestion: null
 };
 const PC = {}; // profile cache
 
 function showView(name) {
+  if (name !== 'game') closeAdminMenu();
   ['auth', 'lobby', 'game', 'game4'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
+  const ab = $('btn-admin');
+  if (ab) { ab.classList.toggle('hidden', !(name === 'game' && isPalAdmin())); if (name !== 'game') closeAdminMenu(); }
   if (name !== 'lobby') clearInterval(S.lobbyTimer);
   window.scrollTo(0, 0);
 }
@@ -740,7 +752,61 @@ async function handleUser(u) {
   }
 }
 
+function isPalAdmin() {
+  return !!(S.profile && String(S.profile.username || '').toLowerCase() === 'pal');
+}
+
+function closeAdminMenu() {
+  S.adminOpen = false;
+  const p = $('admin-panel');
+  if (p) p.remove();
+  const b = $('btn-admin');
+  if (b) b.setAttribute('aria-expanded', 'false');
+}
+
+function adminBestMove() {
+  if (!S.game || S.mode === 'local' && !S.profile) return null;
+  const palColor = S.mode === 'online'
+    ? (S.online.row.white_id === S.user.id && isPalAdmin() ? 'w' : S.online.row.black_id === S.user.id && isPalAdmin() ? 'b' : null)
+    : (S.mode === 'ai' ? S.color : null);
+  if (!palColor || S.game.turn() !== palColor || S.over) return null;
+  const g = new Chess(S.game.fen());
+  const move = pickBotMove(g, 2400, 3, 700);
+  return move ? {san: move.san, from: move.from, to: move.to, promotion: move.promotion || null, color: palColor} : null;
+}
+
+function showAdminMenu() {
+  if (!isPalAdmin()) return;
+  closeAdminMenu();
+  const panel = document.createElement('div');
+  panel.id = 'admin-panel'; panel.className = 'admin-panel';
+  panel.setAttribute('role','dialog'); panel.setAttribute('aria-label','PAL Admin');
+  panel.innerHTML = `<h3>PAL Admin</h3><p class="muted small">Match analysis tools for the PAL account.</p><div id="admin-analysis"><div class="admin-meta">Press the button to calculate PAL's next move.</div></div><div class="admin-actions"><button class="btn primary" id="admin-best" type="button">Find best move</button><button class="btn ghost" id="admin-close" type="button">Close</button></div>`;
+  document.body.appendChild(panel);
+  S.adminOpen = true;
+  $('btn-admin').setAttribute('aria-expanded','true');
+  $('admin-close').onclick = closeAdminMenu;
+  $('admin-best').onclick = () => {
+    const box = $('admin-analysis');
+    box.innerHTML = '<div class="admin-meta">Analyzing position…</div>';
+    setTimeout(() => {
+      const m = adminBestMove();
+      if (!m) {
+        box.innerHTML = '<div class="admin-meta">It is not PAL\'s turn, there is no active match, or the game is over.</div>';
+        return;
+      }
+      S.adminSuggestion = m;
+      box.innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div>`;
+    }, 30);
+  };
+}
+
 function renderUserBox() {
+  const adminBtn = $('btn-admin');
+  if (adminBtn) {
+    adminBtn.classList.toggle('hidden', !(isPalAdmin() && S.mode === 'ai' || isPalAdmin() && S.mode === 'online'));
+    if (!isPalAdmin()) closeAdminMenu();
+  }
   const box = $('userbox');
   if (isGuest()) {
     box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span><span class="tag">Guest</span><button class="btn ghost sm" id="btn-out" type="button">Leave</button>`;
@@ -3068,6 +3134,7 @@ function bindStatic() {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
   renderSoundBtn();
   $('btn-sound').onclick = () => setSound(!SFX.on);
+  $('btn-admin').onclick = showAdminMenu;
   ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (SFX.on) audio(); }, {once: true}));   // browsers only allow audio after a tap or key press
   $('tab-in').onclick = () => setAuthMode('in');
   $('tab-up').onclick = () => setAuthMode('up');
