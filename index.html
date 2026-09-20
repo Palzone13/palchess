@@ -172,6 +172,34 @@ label input{margin-top:6px}
 .friends{margin-bottom:28px}
 .friends .glist:empty{display:none}
 
+/* notification center */
+.bell{position:relative}
+.bell .badge{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--gold);color:#241a05;font:800 11px/18px var(--f-body);text-align:center}
+.npanel{position:fixed;top:64px;right:16px;z-index:65;width:min(380px,calc(100vw - 32px));max-height:min(70vh,560px);overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.nhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
+.ntoggle{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer}
+.ntoggle input{width:auto;margin:0}
+.nlist{list-style:none;margin:0;padding:0}
+.nlist li{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.nlist li:last-child{border-bottom:0}
+.nlist .ntitle{font-weight:600}
+.nlist .nsub{color:var(--muted);font-size:13px}
+.nlist .nact{display:flex;gap:8px;flex-wrap:wrap}
+.nempty{padding:24px 14px;text-align:center;color:var(--muted)}
+.small{font-size:13px}
+
+/* live alerts */
+.hright{display:flex;align-items:center;gap:12px}
+.alerts{position:fixed;top:66px;right:16px;z-index:70;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 32px))}
+.alert{position:relative;display:flex;flex-direction:column;gap:10px;background:var(--panel2);border:1px solid var(--gold);border-radius:12px;padding:12px 40px 12px 14px;box-shadow:0 12px 32px rgba(0,0,0,.45);animation:alert-in .25s ease-out}
+.alert .atxt{display:flex;flex-direction:column;gap:2px}
+.alert .atxt span{color:var(--muted);font-size:14px}
+.alert .aact{display:flex;gap:8px;flex-wrap:wrap}
+.alert .aact:empty{display:none}
+.alert .aclose{position:absolute;top:6px;right:8px;width:28px;height:28px;border:0;border-radius:6px;background:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.alert .aclose:hover{color:var(--text);background:var(--line)}
+@keyframes alert-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
 /* modal + toast */
 .scrim{position:fixed;inset:0;background:rgba(6,12,18,.66);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
 .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(400px,100%)}
@@ -196,14 +224,18 @@ label input{margin-top:6px}
   .move-review{margin-left:4px}
   .seg.tc{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
 </head>
 <body>
 
 <header class="top">
   <button class="brand" id="brand" type="button" aria-label="PAL Chess home"><span class="mark">&#9822;&#xFE0E;</span><span>PAL Chess</span></button>
-  <div class="userbox" id="userbox"></div>
+  <div class="hright">
+    <button class="btn ghost sm bell hidden" id="btn-bell" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Notifications"><span aria-hidden="true">🔔</span><span class="badge hidden" id="bell-badge">0</span></button>
+    <button class="btn ghost sm" id="btn-sound" type="button" aria-pressed="false"></button>
+    <div class="userbox" id="userbox"></div>
+  </div>
 </header>
 
 <main>
@@ -284,6 +316,8 @@ label input{margin-top:6px}
 </main>
 
 <div id="modal-root"></div>
+<div class="npanel hidden" id="npanel" role="dialog" aria-label="Notifications"></div>
+<div class="alerts" id="alerts" aria-live="polite"></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
@@ -497,7 +531,10 @@ const S = {
   aiLevel: 2, aiThinking: false,
   online: null, lobbyTimer: null,
   review: null,          // {ply, timer, analysis} while the post-game overview is open
-  tc: 0, clock: null     // time control (seconds) and clocks for computer / pass-and-play games
+  tc: 0, clock: null,    // time control (seconds) and clocks for computer / pass-and-play games
+  sfxPly: -1, endPlayed: null, lowSec: 0, unread: 0,
+  notes: [], pending: {friends: [], challenges: []}, notesTimer: null,   // notification centre
+  mm: null                                                                 // quick-match search in progress
 };
 const PC = {}; // profile cache
 
@@ -609,9 +646,11 @@ async function handleUser(u) {
     S.guest = false;
     await loadProfile();
     renderUserBox();
+    if (changed) startInbox();
     if (changed) { teardownOnline(); S.mode = null; S.game = null; goLobby(); }
   } else {
     S.profile = null;
+    stopInbox();
     teardownOnline();
     S.mode = null; S.game = null;
     renderUserBox();
@@ -667,13 +706,18 @@ function renderLobby() {
   }
   o.innerHTML = `
     <h3>Play online</h3>
+    <div class="row">${tcSeg('seg-otc', 300)}</div>
+    <div class="row">
+      <button class="btn primary" id="quick-match" type="button">Find a match</button>
+      <span class="muted small">Paired with someone near your rating. Colours are picked for you.</span>
+    </div>
+    <h4>Or set up your own game</h4>
     <div class="row">
       <div class="seg" id="seg-ocolor" data-val="r" aria-label="Your color">
         <button type="button" data-v="w">White</button><button type="button" data-v="b">Black</button><button type="button" data-v="r" class="on">Random</button>
       </div>
+      <button class="btn" id="create-game" type="button">Create game</button>
     </div>
-    <div class="row">${tcSeg('seg-otc', 300)}</div>
-    <div class="row"><button class="btn primary" id="create-game" type="button">Create game</button></div>
     <div class="row code-row">
       <input id="code-in" placeholder="Game code" maxlength="6" autocomplete="off" aria-label="Game code">
       <button class="btn" id="join-code" type="button">Join with code</button>
@@ -687,6 +731,7 @@ function renderLobby() {
     <ul class="glist" id="my-games"></ul>`;
   initSeg($('seg-ocolor')); initSeg($('seg-otc'));
   $('create-game').onclick = () => createGame($('seg-ocolor').dataset.val, +$('seg-otc').dataset.val);
+  $('quick-match').onclick = () => startMatchmaking(+$('seg-otc').dataset.val);
   $('join-code').onclick = joinByCode;
   $('code-in').addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
   ['open-games', 'my-games', 'chal-games'].forEach(id => $(id).addEventListener('click', onGameListClick));
@@ -851,8 +896,9 @@ async function createGame(pref, tc, invitedId) {
 
 async function joinGame(id) {
   const {data, error} = await sb.rpc('join_game', {gid: id});
-  if (error) return toast(error.message, true);
-  openOnline(Array.isArray(data) ? data[0] : data);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (error || !row) return toast(error ? error.message : 'Could not join that game.', true);
+  openOnline(row);
 }
 
 async function joinByCode() {
@@ -882,6 +928,7 @@ async function cancelGame(id) {
 /* ═════════════ Online games ═════════════ */
 function teardownOnline() {
   endReview();
+  S.sfxPly = -1; S.endPlayed = null; S.lowSec = 0;   // next game starts silent until something happens
   if (S.online) {
     if (S.online.channel) sb.removeChannel(S.online.channel);
     clearInterval(S.online.poll);
@@ -898,6 +945,7 @@ async function openOnline(row) {
   await Promise.all([fetchProfiles([row.white_id, row.black_id, row.invited_id]), syncServerClock()]);
   S.game = rebuild(row.moves); syncLast();
   S.over = row.status === 'finished' ? {result: row.result, reason: row.reason} : null;
+  S.endPlayed = S.over;
   showView('game'); render();
   const id = row.id;
   S.online.channel = sb.channel('game-' + id)
@@ -1010,6 +1058,341 @@ function leaveGame() {
   if (S.user || S.guest) goLobby(); else showView('auth');
 }
 
+/* ═════════════ Sounds ═════════════ */
+// Everything is synthesised with the Web Audio API, so there are no sound files to host.
+const SFX = {ctx: null, on: true};
+try { SFX.on = localStorage.getItem('palchess.sound') !== 'off'; } catch (e) { /* storage blocked */ }
+
+function audio() {
+  if (!SFX.ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    SFX.ctx = new AC();
+  }
+  if (SFX.ctx.state === 'suspended') SFX.ctx.resume();
+  return SFX.ctx;
+}
+function tone(c, o) {
+  const t0 = c.currentTime + (o.t || 0), d = o.d || 0.12, osc = c.createOscillator(), g = c.createGain();
+  osc.type = o.type || 'sine';
+  osc.frequency.setValueAtTime(o.f, t0);
+  if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, t0 + d);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(o.v || 0.2, t0 + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+  osc.connect(g); g.connect(c.destination);
+  osc.start(t0); osc.stop(t0 + d + 0.03);
+}
+function noise(c, o) {
+  const t0 = c.currentTime + (o.t || 0), len = Math.max(1, Math.floor(c.sampleRate * (o.d || 0.05)));
+  const buf = c.createBuffer(1, len, c.sampleRate), data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  const src = c.createBufferSource(), filt = c.createBiquadFilter(), g = c.createGain();
+  src.buffer = buf; filt.type = o.type || 'bandpass'; filt.frequency.value = o.f || 1500; filt.Q.value = o.q || 0.8;
+  g.gain.setValueAtTime(o.v || 0.3, t0);
+  src.connect(filt); filt.connect(g); g.connect(c.destination);
+  src.start(t0);
+}
+const SOUNDS = {
+  move:    c => { tone(c, {f: 210, f2: 120, d: 0.07, v: 0.32}); noise(c, {d: 0.03, v: 0.35, f: 1400}); },
+  capture: c => { tone(c, {f: 160, f2: 70, d: 0.14, v: 0.42}); noise(c, {d: 0.08, v: 0.5, f: 1000, q: 0.5}); noise(c, {d: 0.03, v: 0.4, f: 3000}); },
+  castle:  c => { SOUNDS.move(c); tone(c, {t: 0.11, f: 210, f2: 120, d: 0.07, v: 0.32}); noise(c, {t: 0.11, d: 0.03, v: 0.35, f: 1400}); },
+  promote: c => { tone(c, {f: 520, d: 0.12, type: 'triangle', v: 0.22}); tone(c, {t: 0.09, f: 780, d: 0.2, type: 'triangle', v: 0.22}); },
+  check:   c => { tone(c, {f: 880, d: 0.12, type: 'triangle', v: 0.24}); tone(c, {t: 0.1, f: 1175, d: 0.2, type: 'triangle', v: 0.24}); },
+  win:     c => [523, 659, 784, 1047].forEach((f, i) => tone(c, {t: i * 0.11, f, d: 0.28, type: 'triangle', v: 0.22})),
+  lose:    c => [392, 330, 262].forEach((f, i) => tone(c, {t: i * 0.16, f, d: 0.34, v: 0.24})),
+  draw:    c => { tone(c, {f: 523, d: 0.3, type: 'triangle', v: 0.2}); tone(c, {t: 0.14, f: 392, d: 0.36, type: 'triangle', v: 0.2}); },
+  notify:  c => { tone(c, {f: 988, d: 0.32, v: 0.26}); tone(c, {t: 0.13, f: 1319, d: 0.5, v: 0.26}); },
+  tick:    c => tone(c, {f: 1200, d: 0.04, type: 'square', v: 0.07})
+};
+function sfx(name) {
+  if (!SFX.on) return;
+  const c = audio();
+  if (c && SOUNDS[name]) { try { SOUNDS[name](c); } catch (e) { /* audio is optional */ } }
+}
+function renderSoundBtn() {
+  const b = $('btn-sound'), label = SFX.on ? 'Sound on' : 'Sound off';
+  b.textContent = SFX.on ? '🔊' : '🔇';
+  b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(!SFX.on));
+}
+function setSound(on) {
+  SFX.on = on;
+  try { localStorage.setItem('palchess.sound', on ? 'on' : 'off'); } catch (e) { /* ignore */ }
+  renderSoundBtn();
+  if (on) sfx('move');
+}
+
+function sfxMove(g) {
+  const m = g.history({verbose: true}).pop();
+  if (!m) return;
+  if (g.in_check()) sfx('check');
+  else if (m.captured) sfx('capture');
+  else if (m.flags.indexOf('k') >= 0 || m.flags.indexOf('q') >= 0) sfx('castle');
+  else if (m.promotion) sfx('promote');
+  else sfx('move');
+}
+function sfxEnd() {
+  const o = S.over;
+  if (!o) return;
+  if (o.result === '1/2-1/2') return sfx('draw');
+  if (S.mode === 'local') return sfx('win');
+  sfx((o.result === '1-0') === (S.color === 'w') ? 'win' : 'lose');
+}
+// Called after every render: plays a sound when a new move (yours, the computer's or your
+// opponent's) or a game result appears. A freshly opened game stays silent until something happens.
+function syncSfx() {
+  if (!S.game || S.review) return;
+  const n = S.game.history().length;
+  const grew = S.sfxPly >= 0 && n > S.sfxPly;
+  S.sfxPly = n;
+  if (grew) sfxMove(S.game);
+  if (S.over && S.endPlayed !== S.over) {
+    S.endPlayed = S.over;
+    setTimeout(sfxEnd, grew ? 280 : 0);
+  }
+}
+
+/* ═════════════ Live alerts ═════════════ */
+const TITLE = document.title;
+function notify(o) {
+  const box = $('alerts'), el = document.createElement('div');
+  el.className = 'alert';
+  el.innerHTML = `<div class="atxt"><b>${esc(o.title)}</b><span>${esc(o.body || '')}</span></div><div class="aact"></div><button class="aclose" type="button" aria-label="Dismiss">×</button>`;
+  const close = () => el.remove();
+  (o.actions || []).forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn sm ' + (a.cls || ''); b.textContent = a.label;
+    b.onclick = () => { close(); a.onClick(); };
+    el.querySelector('.aact').appendChild(b);
+  });
+  el.querySelector('.aclose').onclick = close;
+  box.prepend(el);
+  while (box.children.length > 4) box.lastChild.remove();
+  setTimeout(close, o.ms || 20000);
+  sfx('notify');
+  if (document.hidden && DESK.on && 'Notification' in window && Notification.permission === 'granted') {
+    try { const n = new Notification(o.title, {body: o.body || '', tag: 'palchess'}); n.onclick = () => { window.focus(); n.close(); }; } catch (e) { /* ignore */ }
+  }
+  if (document.hidden) { S.unread++; document.title = `(${S.unread}) ${TITLE}`; }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { S.unread = 0; document.title = TITLE; } });
+
+let inbox = null;
+function startInbox() {
+  stopInbox();
+  const id = S.user.id;
+  inbox = sb.channel('inbox-' + id)
+    .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'games', filter: 'invited_id=eq.' + id}, p => onChallenge(p.new))
+    .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games', filter: 'creator_id=eq.' + id}, p => onJoined(p.new))
+    .on('postgres_changes', {event: 'INSERT', schema: 'public', table: 'friendships', filter: 'addressee_id=eq.' + id}, p => onFriendRequest(p.new))
+    .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'friendships', filter: 'requester_id=eq.' + id}, p => onFriendAccepted(p.new))
+    .subscribe();
+  refreshNotes();
+  S.notesTimer = setInterval(refreshNotes, 30000);
+}
+function stopInbox() {
+  if (inbox) { sb.removeChannel(inbox); inbox = null; }
+  clearInterval(S.notesTimer);
+  S.notes = []; S.pending = {friends: [], challenges: []};
+  closePanel(); renderBell();
+}
+
+const busyPlaying = () => !!(S.mode && S.game && !S.over);   // don't offer buttons that would pull you out of a live game
+const refreshLobby = () => { if (!$('view-lobby').classList.contains('hidden')) loadLobbyData(); };
+
+async function acceptFriend(id) {
+  const {error} = await sb.from('friendships').update({status: 'accepted'}).eq('id', id);
+  toast(error ? error.message : 'Friend added.', !!error);
+  refreshNotes(); refreshLobby();
+}
+
+async function onChallenge(g) {
+  if (!g || g.status !== 'waiting') return;
+  await fetchProfiles([g.creator_id]);
+  notify({
+    title: `${nameOf(g.creator_id)} challenged you`,
+    body: `${tcLabel(g.time_control)}. You play ${g.white_id ? 'Black' : 'White'}.`,
+    ms: 40000,
+    actions: busyPlaying() ? [] : [
+      {label: 'Accept', cls: 'primary', onClick: () => joinGame(g.id)},
+      {label: 'Decline', cls: 'ghost', onClick: () => { cancelGame(g.id); refreshNotes(); }}
+    ]
+  });
+  refreshLobby(); refreshNotes();
+}
+async function onJoined(g) {
+  // the moment someone takes the other seat in a game you created
+  if (!g || g.status !== 'active' || g.moves.length !== 0) return;
+  if (S.online && S.online.row.id === g.id) return;
+  const oppId = g.white_id === S.user.id ? g.black_id : g.white_id;
+  await fetchProfiles([oppId]);
+  const title = `${nameOf(oppId)} joined your game`;
+  addNote({title, body: tcLabel(g.time_control), gameId: g.id});
+  notify({title, body: tcLabel(g.time_control), actions: busyPlaying() ? [] : [{label: 'Play', cls: 'primary', onClick: () => resume(g.id)}]});
+  refreshLobby();
+}
+async function onFriendRequest(f) {
+  if (!f || f.status !== 'pending') return;
+  await fetchProfiles([f.requester_id]);
+  notify({
+    title: `${nameOf(f.requester_id)} wants to be friends`,
+    actions: [{label: 'Accept', cls: 'primary', onClick: () => acceptFriend(f.id)}, {label: 'Later', cls: 'ghost', onClick: () => {}}]
+  });
+  refreshLobby(); refreshNotes();
+}
+async function onFriendAccepted(f) {
+  if (!f || f.status !== 'accepted') return;
+  await fetchProfiles([f.addressee_id]);
+  const title = `${nameOf(f.addressee_id)} accepted your friend request`;
+  addNote({title});
+  notify({title});
+  refreshLobby();
+}
+
+/* ═════════════ Notification centre (the bell) ═════════════ */
+// Pending friend requests and challenges come from the database, so they survive a reload.
+// Notices such as "X joined your game" are kept for this visit only.
+const DESK = {on: false};
+try { DESK.on = localStorage.getItem('palchess.desktop') === 'on'; } catch (e) { /* storage blocked */ }
+let noteSeq = 0;
+
+function addNote(n) {
+  S.notes.unshift(Object.assign({id: ++noteSeq, time: Date.now(), read: false}, n));
+  if (S.notes.length > 20) S.notes.length = 20;
+  renderBell();
+}
+function ago(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 45) return 'just now';
+  return s < 3600 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' h ago';
+}
+
+async function refreshNotes() {
+  if (!S.user) return;
+  const uid = S.user.id;
+  const [fr, ch] = await Promise.all([
+    sb.from('friendships').select('*').eq('addressee_id', uid).eq('status', 'pending'),
+    sb.from('games').select('*').eq('status', 'waiting').eq('invited_id', uid)
+  ]);
+  if (!S.user || S.user.id !== uid) return;
+  S.pending = {friends: fr.data || [], challenges: ch.data || []};
+  await fetchProfiles(S.pending.friends.map(f => f.requester_id).concat(S.pending.challenges.map(g => g.creator_id)));
+  renderBell();
+}
+
+function renderBell() {
+  const b = $('btn-bell'), badge = $('bell-badge'), open = !$('npanel').classList.contains('hidden');
+  b.classList.toggle('hidden', !S.user);
+  if (open) S.notes.forEach(n => { n.read = true; });
+  const count = S.pending.friends.length + S.pending.challenges.length + S.notes.filter(n => !n.read).length;
+  badge.textContent = count > 9 ? '9+' : String(count);
+  badge.classList.toggle('hidden', count === 0);
+  b.setAttribute('aria-label', count ? `Notifications, ${count} new` : 'Notifications');
+  if (open) renderPanel();
+}
+
+function renderPanel() {
+  const busy = busyPlaying(), items = [];
+  S.pending.challenges.forEach(g => items.push(`<li><div><div class="ntitle">${esc(nameOf(g.creator_id))} challenged you</div><div class="nsub">${esc(tcLabel(g.time_control))}, you play ${g.white_id ? 'Black' : 'White'}</div></div>${busy ? '<div class="nsub">Finish your game to respond.</div>' : `<div class="nact"><button class="btn sm primary" data-n="accept-game" data-id="${g.id}" type="button">Accept</button><button class="btn sm ghost" data-n="decline-game" data-id="${g.id}" type="button">Decline</button></div>`}</li>`));
+  S.pending.friends.forEach(f => items.push(`<li><div><div class="ntitle">${esc(nameOf(f.requester_id))} wants to be friends</div></div><div class="nact"><button class="btn sm primary" data-n="accept-friend" data-id="${f.id}" type="button">Accept</button><button class="btn sm ghost" data-n="decline-friend" data-id="${f.id}" type="button">Decline</button></div></li>`));
+  S.notes.forEach(n => items.push(`<li><div><div class="ntitle">${esc(n.title)}</div><div class="nsub">${n.body ? esc(n.body) + ', ' : ''}${ago(n.time)}</div></div><div class="nact">${n.gameId && !busy ? `<button class="btn sm primary" data-n="play" data-id="${n.gameId}" type="button">Play</button>` : ''}<button class="btn sm ghost" data-n="dismiss" data-id="${n.id}" type="button">Dismiss</button></div></li>`));
+  $('npanel').innerHTML = `<div class="nhead"><b>Notifications</b><label class="ntoggle"><input type="checkbox" id="desk-toggle"${DESK.on ? ' checked' : ''}> Desktop alerts</label></div>` +
+    (items.length ? `<ul class="nlist">${items.join('')}</ul>` : '<div class="nempty">You are all caught up.</div>');
+  $('desk-toggle').onchange = e => setDesktop(e.target.checked);
+}
+
+function togglePanel() {
+  const opening = $('npanel').classList.contains('hidden');
+  $('npanel').classList.toggle('hidden', !opening);
+  $('btn-bell').setAttribute('aria-expanded', String(opening));
+  if (opening) { renderBell(); refreshNotes(); }
+}
+function closePanel() {
+  $('npanel').classList.add('hidden');
+  $('btn-bell').setAttribute('aria-expanded', 'false');
+}
+
+function setDesktop(on) {
+  const finish = ok => {
+    DESK.on = ok;
+    try { localStorage.setItem('palchess.desktop', ok ? 'on' : 'off'); } catch (e) { /* ignore */ }
+    if (on && !ok) toast('Desktop alerts are blocked in your browser settings.', true);
+    const t = $('desk-toggle'); if (t) t.checked = ok;
+  };
+  if (!on) return finish(false);
+  if (!('Notification' in window)) { toast('This browser does not support desktop alerts.', true); return finish(false); }
+  if (Notification.permission === 'granted') return finish(true);
+  if (Notification.permission === 'denied') return finish(false);
+  Notification.requestPermission().then(p => finish(p === 'granted'));
+}
+
+async function onPanelClick(e) {
+  const b = e.target.closest('button[data-n]');
+  if (!b) return;
+  const id = b.dataset.id, act = b.dataset.n;
+  if (act === 'accept-game') { closePanel(); joinGame(id); }
+  else if (act === 'decline-game') { await cancelGame(id); refreshNotes(); }
+  else if (act === 'accept-friend') await acceptFriend(id);
+  else if (act === 'decline-friend') { await sb.from('friendships').delete().eq('id', id); refreshNotes(); refreshLobby(); }
+  else if (act === 'play') { closePanel(); resume(id); }
+  else if (act === 'dismiss') { S.notes = S.notes.filter(n => String(n.id) !== id); renderBell(); }
+}
+
+/* ═════════════ Quick match ═════════════ */
+// Keep these three numbers in sync with find_match() in setup.sql.
+const MM_BASE = 100, MM_STEP = 10, MM_MAX = 500;
+const mmRange = sec => Math.min(MM_MAX, MM_BASE + MM_STEP * sec);
+
+function startMatchmaking(tc) {
+  if (S.mm || !S.user) return;
+  const mm = S.mm = {tc, t0: Date.now(), poll: null, paint: null, busy: false};
+  modal('Finding a match', '<p id="mm-text" class="muted"></p><p class="muted small">Stay on this page. You will be taken to the game as soon as someone near your rating is found.</p>', [
+    {label: 'Cancel search', cls: 'ghost', onClick: () => { cancelMatchmaking(); return false; }}
+  ]);
+  const paint = () => {
+    const el = $('mm-text');
+    if (!el) return;
+    const sec = Math.floor((Date.now() - mm.t0) / 1000), r = S.profile ? S.profile.rating : 1200, w = mmRange(sec);
+    el.innerHTML = `${esc(tcLabel(tc))}<br>Looking for players rated ${Math.max(0, r - w)} to ${r + w}. Searching for ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}.`;
+  };
+  paint();
+  mm.paint = setInterval(paint, 1000);
+  mm.poll = setInterval(mmPoll, 3000);
+  mmPoll();
+}
+function stopMatchmaking() {
+  if (!S.mm) return;
+  clearInterval(S.mm.poll); clearInterval(S.mm.paint);
+  S.mm = null;
+}
+async function mmPoll() {
+  const mm = S.mm;
+  if (!mm || mm.busy) return;
+  mm.busy = true;
+  const {data, error} = await sb.rpc('find_match', {tc: mm.tc});
+  mm.busy = false;
+  if (S.mm !== mm) return;                     // cancelled while waiting
+  if (error) { stopMatchmaking(); closeModal(); return toast(dbMsg(error), true); }
+  if (data) { stopMatchmaking(); closeModal(); openMatch(data); }
+}
+async function cancelMatchmaking() {
+  if (!S.mm) return;
+  stopMatchmaking();
+  const {data} = await sb.rpc('cancel_match');
+  closeModal();
+  if (data) openMatch(data);                   // someone matched you a moment before you cancelled
+  else toast('Search cancelled.');
+}
+async function openMatch(gid) {
+  const {data} = await sb.from('games').select('*').eq('id', gid).maybeSingle();
+  if (!data) return toast('Could not open the match.', true);
+  await fetchProfiles([data.white_id, data.black_id]);
+  const oppId = data.white_id === S.user.id ? data.black_id : data.white_id, p = PC[oppId];
+  sfx('notify');
+  toast(`Matched with ${nameOf(oppId)}${p ? ' (' + p.rating + ')' : ''}.`);
+  openOnline(data);
+}
+
 /* ═════════════ Clocks ═════════════ */
 let SERVER_OFFSET = 0;   // server time minus this device's time, so online clocks agree
 async function syncServerClock() {
@@ -1073,6 +1456,11 @@ function tick() {
     el.classList.toggle('low', ms < 10000);
     el.classList.toggle('run', isRunning(c));
   });
+  // your own clock ticking down in the last 10 seconds
+  if ((S.mode === 'ai' || S.mode === 'online') && !S.over && isRunning(S.color) && clockMs(S.color) < 10000) {
+    const sec = Math.ceil(clockMs(S.color) / 1000);
+    if (sec !== S.lowSec) { S.lowSec = sec; sfx('tick'); }
+  } else S.lowSec = 0;
   if (S.over) return;
   const runner = ['w', 'b'].find(isRunning);
   if (!runner || clockMs(runner) > 0) return;
@@ -1183,7 +1571,7 @@ function lastOf(g) {
   const h = g.history({verbose: true});
   return h.length ? {from: h[h.length - 1].from, to: h[h.length - 1].to} : null;
 }
-function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); }
+function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); }
 
 function findKing(brd, color) {
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -1686,6 +2074,14 @@ function miniBoard(el, fen) {
 
 /* ═════════════ Wiring ═════════════ */
 function bindStatic() {
+  renderBell();
+  $('btn-bell').onclick = togglePanel;
+  $('npanel').addEventListener('click', onPanelClick);
+  document.addEventListener('mousedown', e => { if (!$('npanel').classList.contains('hidden') && !e.target.closest('#npanel, #btn-bell')) closePanel(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+  renderSoundBtn();
+  $('btn-sound').onclick = () => setSound(!SFX.on);
+  ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (SFX.on) audio(); }, {once: true}));   // browsers only allow audio after a tap or key press
   $('tab-in').onclick = () => setAuthMode('in');
   $('tab-up').onclick = () => setAuthMode('up');
   $('auth-form').addEventListener('submit', submitAuth);
