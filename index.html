@@ -187,6 +187,11 @@ label input{margin-top:6px}
 .p4chip.out{opacity:.5}
 .p4chip .p4n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
 .p4chip .p4c{color:var(--muted);font-weight:500;font-size:12px}
+.lbseg{margin-bottom:6px;flex-wrap:wrap}
+.p4chip .clk{font:700 15px var(--f-head);min-width:56px;text-align:center;padding:2px 8px;border-radius:7px;background:var(--panel2);font-variant-numeric:tabular-nums}
+.p4chip .clk.run{background:var(--gold);color:#241a05}
+.p4chip .clk.low{color:#ff9d95}
+.p4chip .clk.run.low{background:var(--danger);color:#fff}
 .p4chip .pts{color:var(--gold);font-family:var(--f-head)}
 .p4chip .tag.chk{color:#ff9d95}
 #moves4 li{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:14px}
@@ -314,6 +319,9 @@ label input{margin-top:6px}
         <div id="me-card"></div>
         <div class="friends" id="friends-block"></div>
         <h2 style="margin-bottom:8px">Leaderboard</h2>
+        <div class="seg lbseg" id="seg-lb" data-val="rating" aria-label="Which ranking">
+          <button type="button" data-v="rating" class="on">2-player</button><button type="button" data-v="rating4_bullet">4P Bullet</button><button type="button" data-v="rating4_blitz">4P Blitz</button><button type="button" data-v="rating4_std">4P Standard</button>
+        </div>
         <ol class="leaders" id="leaders"></ol>
       </div>
     </div>
@@ -513,7 +521,7 @@ function negamax(g, depth, alpha, beta) {
   return best;
 }
 
-function pickAIMove(g, level) {
+function pickAIMove(g, level, maxDepth) {
   const moves = g.moves({verbose: true});
   if (!moves.length) return null;
   if (level === 1) {
@@ -525,7 +533,7 @@ function pickAIMove(g, level) {
     const opts = moves.filter(m => book.includes(m.san));
     if (opts.length) return pick(opts);
   }
-  const depth = level === 2 ? 2 : 3;
+  const depth = Math.min(maxDepth || 3, level === 2 ? 2 : 3);
   moves.sort(() => Math.random() - 0.5);
   orderMoves(moves);
   let best = moves[0], alpha = -Infinity;
@@ -846,12 +854,13 @@ function renderLobby() {
 function renderMeCard() {
   const p = S.profile;
   if (p && p.is_guest) { $('me-card').innerHTML = '<div class="me"><div><div class="me-name">Playing as a guest</div><div class="muted">Guests can join games but not host them. Their games are unrated. Create an account to host, add friends and get a rating.</div></div></div>'; return; }
-  $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div></div></div>` : '';
+  $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div><div class="muted small">4-player: Bullet ${p.rating4_bullet}, Blitz ${p.rating4_blitz}, Standard ${p.rating4_std}</div></div></div>` : '';
 }
 
 async function loadLobbyData() {
-  const top = await sb.from('profiles').select('id,username,rating,wins,losses,draws').eq('is_guest', false).order('rating', {ascending: false}).order('wins', {ascending: false}).limit(10);
-  if (!$('view-lobby').classList.contains('hidden')) renderLeaders(top.data || []);
+  const col = S.lbCol || 'rating';
+  const top = await sb.from('profiles').select('id,username,rating,rating4_bullet,rating4_blitz,rating4_std,wins,losses,draws').eq('is_guest', false).order(col, {ascending: false}).order('wins', {ascending: false}).limit(10);
+  if (!$('view-lobby').classList.contains('hidden')) renderLeaders(top.data || [], col);
   if (!S.user || isGuest() || !$('open-games')) return;
   const uid = S.user.id, mineFilter = `white_id.eq.${uid},black_id.eq.${uid}`;
   const [open, mine, chal, fr, open4, mine4] = await Promise.all([
@@ -875,10 +884,11 @@ async function loadLobbyData() {
   renderP4Lists(open4.data || [], (mine4 && mine4.data) || []);
 }
 
-function renderLeaders(rows) {
+function renderLeaders(rows, col) {
+  col = col || 'rating';
   const ol = $('leaders');
   if (!rows.length) { ol.innerHTML = '<li class="muted" style="display:block">No players yet. Create an account and be the first.</li>'; return; }
-  ol.innerHTML = rows.map((p, i) => `<li class="${S.user && p.id === S.user.id ? 'me-row' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(p.username)}</span><span class="rt">${p.rating}</span><span class="wl">${p.wins}-${p.losses}-${p.draws}</span></li>`).join('');
+  ol.innerHTML = rows.map((p, i) => `<li class="${S.user && p.id === S.user.id ? 'me-row' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(p.username)}</span><span class="rt">${p[col]}</span><span class="wl">${col === 'rating' ? p.wins + '-' + p.losses + '-' + p.draws : ''}</span></li>`).join('');
 }
 
 function nameOf(id) { const p = PC[id]; return p ? p.username : 'Player'; }
@@ -1766,10 +1776,10 @@ function settle4(st, last) {
 function play4(st, tok) {
   if (st.turn < 0) return false;
   st.events = [];
-  if (tok[0] === 'R') {
+  if (tok[0] === 'R' || tok[0] === 'T') {                          // "R2" = seat 2 resigns, "T2" = seat 2 ran out of time
     const c = +tok.slice(1);
     if (!(c >= 0 && c < 4) || !st.alive[c]) return false;
-    kill4(st, c, 'resign'); st.hist.push(tok); st.lastMove = null;
+    kill4(st, c, tok[0] === 'R' ? 'resign' : 'timeout'); st.hist.push(tok); st.lastMove = null;
     if (alive4(st) <= 1) st.turn = -1; else if (st.turn === c) settle4(st, c);
     return true;
   }
@@ -1793,12 +1803,13 @@ function replay4(tokens) {
   return st;
 }
 const tok4 = m => sq4(m[0], m[1]) + sq4(m[2], m[3]);
-// final standings, best first (a draw shares first place)
+// final standings, best first (a draw shares first place). "out" is the knock-out order, first out first: ratings use it.
 function standings4(st) {
-  if (st.draw) return {draw: true, order: [0, 1, 2, 3].filter(c => st.alive[c])};
+  if (st.draw) return {draw: true, order: [0, 1, 2, 3].filter(c => st.alive[c]), out: st.out.slice()};
   const win = [0, 1, 2, 3].find(c => st.alive[c]);
-  return {draw: false, order: [win].concat(st.out.slice().reverse())};
+  return {draw: false, order: [win].concat(st.out.slice().reverse()), out: st.out.slice()};
 }
+const seatOf4 = (tok, st) => (tok[0] === 'R' || tok[0] === 'T') ? +tok.slice(1) : st.turn;
 
 // A simple bot: grabs material, avoids leaving pieces where they can be taken, hunts checks and mates, develops
 // and pushes pawns. Not strong, but it plays purposefully.
@@ -1839,7 +1850,8 @@ function bot4Move(st, c) {
 
 /* ═════════════ 4-player chess: screen ═════════════ */
 const G4 = {on: false, mode: null, st: null, log: [], me: -1, orient: 0, sel: null, targets: [], names: ['', '', '', ''],
-  bots: [false, false, false, false], over: null, overShown: false, review: null, online: null, botTimer: null, sfxPly: -1, lastTurnAt: 0, tickT: null};
+  bots: [false, false, false, false], over: null, overShown: false, review: null, online: null, botTimer: null, sfxPly: -1, lastTurnAt: 0, tickT: null,
+  tc: 0, clk: [0, 0, 0, 0], since: 0, lastBars: 0, tlock: 0};
 // the board is turned so that your own colour is at the bottom
 const G4COL = ['#ee7a6f', '#62b5ff', '#f2c94c', '#59c38e'];
 const toBoard4 = (o, sx, sy) => o === 0 ? [sx, sy] : o === 1 ? [sy, 13 - sx] : o === 2 ? [13 - sx, 13 - sy] : [13 - sy, sx];
@@ -1847,6 +1859,7 @@ const toBoard4 = (o, sx, sy) => o === 0 ? [sx, sy] : o === 1 ? [sy, 13 - sx] : o
 function logEntry4(st, tok, c) {
   let txt;
   if (tok[0] === 'R') txt = 'resigned';
+  else if (tok[0] === 'T') txt = 'ran out of time';
   else {
     const m = st.lastMove;
     txt = sq4(m.from[0], m.from[1]) + (m.cap ? ' x ' : ' to ') + sq4(m.to[0], m.to[1]) + (m.promo ? ' (queen)' : '') + (m.castle ? ' (castles)' : '');
@@ -1860,17 +1873,19 @@ function logEntry4(st, tok, c) {
 function rebuild4(tokens) {
   const st = new4(), log = [];
   for (const t of tokens) {
-    const c = st.turn;
+    const c = seatOf4(t, st);
     if (!play4(st, t)) break;
-    log.push(logEntry4(st, t, t[0] === 'R' ? +t.slice(1) : c));
+    log.push(logEntry4(st, t, c));
   }
   return {st, log};
 }
 
-function start4(mode) {
+function start4(mode, tc) {
   teardownOnline();
   S.mode = 'p4'; S.game = null;
-  Object.assign(G4, {on: true, mode, st: new4(), log: [], sel: null, targets: [], over: null, overShown: false, review: null, online: null, sfxPly: -1, lastTurnAt: Date.now()});
+  Object.assign(G4, {on: true, mode, st: new4(), log: [], sel: null, targets: [], over: null, overShown: false, endPlayed: false, review: null, online: null, sfxPly: -1, lastTurnAt: Date.now(),
+    tc: tc || 0, clk: [0, 1, 2, 3].map(() => (tc || 0) * 1000), since: Date.now(), tlock: 0});
+  clearInterval(G4.tickT); G4.tickT = setInterval(tick4, 100);
   if (mode === 'bots') {
     const pool = UNIQUE_BOT_NAMES.slice().sort(() => Math.random() - 0.5);
     G4.me = 0; G4.orient = 0;
@@ -1929,6 +1944,47 @@ function renderBoard4(st) {
   $('board4').innerHTML = html;
 }
 
+/* 4-player clocks. Each player's first turn is free; after that time is charged to whoever is on the move.
+   Online games keep the clocks in the database (the server checks every move and every timeout);
+   games against bots and pass-and-play keep them here. */
+const tc4 = () => G4.mode === 'online' && G4.online ? G4.online.row.time_control : G4.tc;
+function runSeat4() {
+  const st = G4.st;
+  if (!G4.on || !st || G4.over || st.turn < 0 || !tc4()) return -1;
+  if (G4.mode === 'online') { const r = G4.online.row; if (r.status !== 'active' || r.moves.length < 4) return -1; }
+  else if (st.hist.length < 4) return -1;
+  return st.turn;
+}
+function clk4(c) {
+  if (G4.mode === 'online') {
+    const r = G4.online.row;
+    let ms = (r.clocks && r.clocks[c] != null) ? r.clocks[c] : tc4() * 1000;
+    if (runSeat4() === c) ms -= serverNow() - tsMs(r.turn_started_at);
+    return Math.max(0, ms);
+  }
+  let ms = G4.clk[c];
+  if (runSeat4() === c) ms -= Date.now() - G4.since;
+  return Math.max(0, ms);
+}
+function tick4() {
+  if (!G4.on || !G4.st || G4.review) return;
+  if (tc4()) {
+    const run = runSeat4();
+    document.querySelectorAll('.clk4').forEach(el => {
+      const c = +el.dataset.c, ms = clk4(c);
+      el.textContent = fmtClock(ms);
+      el.classList.toggle('low', ms < 10000);
+      el.classList.toggle('run', run === c);
+    });
+    if (run >= 0 && clk4(run) <= 0 && Date.now() > G4.tlock) {
+      G4.tlock = Date.now() + 1500;             // the server decides for online games, so retry until it agrees
+      commit4('T' + run);
+    }
+  }
+  if (Date.now() - G4.lastBars > 5000) { G4.lastBars = Date.now(); renderBars4(viewState4()); }   // shows "Replace with bot" once someone is slow
+}
+const RATING4 = {60: ['rating4_bullet', 'Bullet'], 180: ['rating4_blitz', 'Blitz'], 300: ['rating4_std', 'Standard'], 600: ['rating4_std', 'Standard']};
+
 function seatName4(c) {
   const o = G4.online;
   if (o && o.row.status === 'waiting' && !G4.names[c]) return 'Empty seat';
@@ -1944,7 +2000,9 @@ function renderBars4(st) {
     const stale = host && o.row.status === 'active' && turn && human && c !== G4.me && Date.now() - G4.lastTurnAt > 40000;
     const tags = (G4.bots[c] ? '<span class="tag">bot</span>' : '') + (c === G4.me ? '<span class="tag">you</span>' : '') +
       (out ? '<span class="tag">out</span>' : '') + (chk ? '<span class="tag chk">check</span>' : '');
-    return `<div class="p4chip${turn ? ' turn' : ''}${out ? ' out' : ''}" style="--pc:${G4COL[c]}"><span class="dotc"></span><span class="p4n">${esc(seatName4(c))}</span><span class="p4c">${C4[c]}</span><span class="pts" title="Points">${st.score[c]}</span>${tags}${stale ? `<button class="btn sm ghost" data-a4="bot" data-seat="${c}" type="button">Replace with bot</button>` : ''}</div>`;
+    const ms = tc4() && !G4.review ? clk4(c) : -1;
+    const clk = ms >= 0 ? `<span class="clk clk4${runSeat4() === c ? ' run' : ''}${ms < 10000 ? ' low' : ''}" data-c="${c}">${fmtClock(ms)}</span>` : '';
+    return `<div class="p4chip${turn ? ' turn' : ''}${out ? ' out' : ''}" style="--pc:${G4COL[c]}"><span class="dotc"></span><span class="p4n">${esc(seatName4(c))}</span><span class="p4c">${C4[c]}</span>${clk}<span class="pts" title="Points">${st.score[c]}</span>${tags}${stale ? `<button class="btn sm ghost" data-a4="bot" data-seat="${c}" type="button">Replace with bot</button>` : ''}</div>`;
   }).join('');
 }
 
@@ -1961,7 +2019,7 @@ function statusText4(st) {
     return place > 0 ? `${seatName4(w)} wins. You finished ${['1st', '2nd', '3rd', '4th'][place]}.` : `${seatName4(w)} wins.`;
   }
   if (o && o.row.status === 'waiting') return o.row.creator_id === S.user.id ? 'Waiting for players. Start when you are ready; empty seats get bots.' : 'Waiting for the host to start the game.';
-  const c = st.turn, ev = st.events.map(e => e.t === 'mate' ? `${C4[e.c]} was checkmated (+20 to ${C4[e.by]}).` : e.t === 'stalemate' ? `${C4[e.c]} was stalemated.` : e.t === 'resign' ? `${C4[e.c]} resigned.` : '').filter(Boolean).join(' ');
+  const c = st.turn, ev = st.events.map(e => e.t === 'mate' ? `${C4[e.c]} was checkmated (+20 to ${C4[e.by]}).` : e.t === 'stalemate' ? `${C4[e.c]} was stalemated.` : e.t === 'resign' ? `${C4[e.c]} resigned.` : e.t === 'timeout' ? `${C4[e.c]} ran out of time.` : '').filter(Boolean).join(' ');
   const mine = G4.mode === 'local' ? `${C4[c]} to move.` : (c === G4.me ? 'Your move.' : `${seatName4(c)} to move.`);
   return (ev ? ev + ' ' : '') + mine + (inCheck4(st, c) ? ' Check.' : '');
 }
@@ -1974,7 +2032,7 @@ function renderSide4(st) {
   const o = G4.online, inv = $('invite4');
   if (o && o.row.status === 'waiting') {
     inv.classList.remove('hidden');
-    inv.innerHTML = `<div class="muted">Share this code${o.row.allow_guests ? '. Guests can join without an account' : ''}</div><div class="big">${esc(o.row.code)}</div><button class="btn sm" id="copy4" type="button">Copy code</button>`;
+    inv.innerHTML = `<div class="muted">${esc(tcLabel(o.row.time_control))}${o.row.time_control ? ', rated when 2 or more account players take part' : ', unrated'}</div><div class="muted">Share this code${o.row.allow_guests ? '. Guests can join without an account' : ''}</div><div class="big">${esc(o.row.code)}</div><button class="btn sm" id="copy4" type="button">Copy code</button>`;
     $('copy4').onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText(o.row.code).then(() => toast('Code copied.')); };
   } else inv.classList.add('hidden');
 
@@ -1998,7 +2056,7 @@ function renderSide4(st) {
   if (o && o.row.status === 'waiting' && o.row.creator_id === S.user.id) add('Start game', start4Online, 'primary');
   if (G4.over && total) add('Overview', () => { G4.review = {ply: total}; render4(); }, 'primary');
   add('Rotate board', () => { G4.orient = (G4.orient + 1) % 4; render4(); });
-  if (!o && !G4.over) add('New game', () => start4(G4.mode));
+  if (!o && !G4.over) add('New game', () => start4(G4.mode, G4.tc));
   if (o && o.row.status === 'active' && !G4.over && G4.me >= 0 && st.alive[G4.me]) add('Resign', confirmResign4, 'danger');
   add('Rules', showRules4, 'ghost');
   add('Back to lobby', leaveGame, 'ghost');
@@ -2012,7 +2070,9 @@ function showRules4() {
     <li>You must get out of check. If you have no legal move you are out: checkmate gives the player who did it 20 points, stalemate gives you 20.</li>
     <li>An eliminated player's pieces turn grey. They stay in the way and can be captured for no points.</li>
     <li>Captures score points: pawn 1, knight 3, bishop 5, rook 5, queen 9. The last player standing wins, and points are just for bragging rights.</li>
-    <li>If 100 moves pass with no capture or pawn move (50 once two players are left), the game is a draw.</li></ul>`, [{label: 'Got it', cls: 'primary'}], true);
+    <li>If 100 moves pass with no capture or pawn move (50 once two players are left), the game is a draw.</li>
+    <li>Timed games: each player's first turn is free, then your clock runs on your turn. If it hits zero you are out, like a resignation.</li>
+    <li>Ratings: timed online games count if at least 2 players have accounts (bots and guests are ignored). Everyone starts at 100. Bullet and Blitz are separate ratings, and Original and Long share one. Finishing above another player counts as a win against them.</li></ul>`, [{label: 'Got it', cls: 'primary'}], true);
 }
 function showOver4() {
   const o = G4.over;
@@ -2066,8 +2126,10 @@ function onBoard4(e) {
 }
 
 function commit4(tok) {
-  const st = G4.st, c = tok[0] === 'R' ? +tok.slice(1) : st.turn;
+  const st = G4.st, c = seatOf4(tok, st);
+  if (G4.mode !== 'online' && G4.tc) { const r = runSeat4(); if (r >= 0) G4.clk[r] = clk4(r); }   // bank the time used so far
   if (!play4(st, tok)) return false;
+  G4.since = Date.now();
   G4.log.push(logEntry4(st, tok, c));
   G4.sel = null; G4.targets = []; G4.lastTurnAt = Date.now();
   render4();
@@ -2088,7 +2150,7 @@ function maybeBot4() {
     if (!G4.on || G4.st !== st || st.turn !== c || G4.review || G4.over) return;
     const m = bot4Move(st, c);
     if (m) commit4(tok4(m));
-  }, 700 + Math.random() * 900);
+  }, thinkMs(tc4()));
 }
 
 /* ═════════════ 4-player chess: online ═════════════ */
@@ -2101,7 +2163,8 @@ function seatInfo4(row) {
 
 async function create4() {
   const allow = $('p4-guests') ? $('p4-guests').checked : true;
-  const {data, error} = await sb.from('games4').insert({creator_id: S.user.id, seats: [S.user.id, null, null, null], allow_guests: allow}).select().single();
+  const tc = $('seg-p4tc') ? +$('seg-p4tc').dataset.val : 0;
+  const {data, error} = await sb.from('games4').insert({creator_id: S.user.id, seats: [S.user.id, null, null, null], allow_guests: allow, time_control: tc}).select().single();
   if (error) return toast(dbMsg(error), true);
   open4Online(data);
 }
@@ -2127,7 +2190,7 @@ async function open4Online(row) {
     .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games4', filter: 'id=eq.' + id}, p => applyRow4(p.new))
     .subscribe();
   G4.online.poll = setInterval(pollOnline4, 3000);
-  G4.tickT = setInterval(() => { if (G4.on && G4.online && G4.online.row.status === 'active') renderBars4(viewState4()); }, 5000);   // shows "Replace with bot" once someone is slow
+  clearInterval(G4.tickT); G4.tickT = setInterval(tick4, 100);
   maybeBot4();
   if (G4.over) settle4Online();
 }
@@ -2151,7 +2214,7 @@ async function applyRow4(row) {
   if (row.moves.length > st.hist.length) {
     if (st.hist.every((t, i) => t === row.moves[i])) {           // just play the new moves on top of what we have
       for (let i = st.hist.length; i < row.moves.length; i++) {
-        const tok = row.moves[i], c = tok[0] === 'R' ? +tok.slice(1) : st.turn;
+        const tok = row.moves[i], c = seatOf4(tok, st);
         if (!play4(st, tok)) break;
         G4.log.push(logEntry4(st, tok, c));
       }
@@ -2190,7 +2253,12 @@ async function settle4Online() {
   if (!o || o.settled) return;
   o.settled = true;
   clearInterval(o.poll);
-  await sb.rpc('acknowledge_game4', {gid: o.row.id});
+  const rc = RATING4[o.row.time_control], before = rc && S.profile ? S.profile[rc[0]] : null;
+  await sb.rpc('acknowledge_game4', {gid: o.row.id});    // records the ratings, and deletes the game once everyone has seen it
+  if (!rc || before == null) return;
+  await loadProfile();
+  const after = S.profile ? S.profile[rc[0]] : before;
+  if (after !== before) toast(`4-player ${rc[1]} rating ${before} to ${after} (${after > before ? '+' : ''}${after - before})`);
 }
 async function start4Online() {
   const o = G4.online;
@@ -2214,6 +2282,8 @@ function renderP4Block() {
   const b = $('p4-block'), acct = !!(S.user && !isGuest());
   b.innerHTML = `<h3>4-player chess</h3>
     <p class="muted small">Four colours on one board. Last player standing wins. <button class="link" id="p4-rules" type="button">How it works</button></p>
+    <div class="row">${tcSeg('seg-p4tc', 0)}</div>
+    <p class="muted small">Timed online games are rated, starting at 100. Bullet and Blitz have their own ratings; Original and Long share one.</p>
     <div class="row"><button class="btn primary" id="p4-bots" type="button">Play with 3 bots</button><button class="btn" id="p4-local" type="button">Pass and play</button></div>` +
     (acct ? `<h4>Host an online game</h4>
       <div class="row"><button class="btn" id="p4-host" type="button">Host a game</button><label class="ntoggle"><input type="checkbox" id="p4-guests" checked> Guests can join</label></div>
@@ -2222,8 +2292,9 @@ function renderP4Block() {
       <ul class="glist" id="open4"><li class="muted">Loading…</li></ul>`
     : `<p class="muted small">${S.user ? 'As a guest you can join 4-player games with a code.' : 'Sign in to host an online 4-player game, or join one with a code.'}</p>`);
   $('p4-rules').onclick = showRules4;
-  $('p4-bots').onclick = () => start4('bots');
-  $('p4-local').onclick = () => start4('local');
+  initSeg($('seg-p4tc'));
+  $('p4-bots').onclick = () => start4('bots', +$('seg-p4tc').dataset.val);
+  $('p4-local').onclick = () => start4('local', +$('seg-p4tc').dataset.val);
   if (acct) {
     $('p4-host').onclick = create4;
     ['open4', 'my4'].forEach(id => $(id).addEventListener('click', onP4ListClick));
@@ -2232,8 +2303,8 @@ function renderP4Block() {
 function renderP4Lists(open, mine) {
   if (!$('open4')) return;
   const uid = S.user.id, seated = g => g.seats.filter(Boolean).length;
-  $('open4').innerHTML = open.filter(g => g.seats.indexOf(uid) < 0).map(g => `<li><span class="who"><b>${esc(nameOf(g.creator_id))}</b><span class="sub">${seated(g)}/4 seated${g.allow_guests ? '' : ', no guests'}</span></span><button class="btn sm primary" data-a4="join" data-id="${g.id}" type="button">Join</button></li>`).join('') || '<li class="muted">No open 4-player games right now.</li>';
-  $('my4').innerHTML = mine.map(g => `<li><span class="who"><b>4-player, code ${esc(g.code)}</b><span class="sub">${g.status === 'waiting' ? seated(g) + '/4 seated' : 'in progress'}</span></span>${g.status === 'waiting' && g.creator_id === uid ? `<button class="btn sm ghost" data-a4="cancel" data-id="${g.id}" type="button">Cancel</button>` : ''}<button class="btn sm" data-a4="open" data-id="${g.id}" type="button">Open</button></li>`).join('');
+  $('open4').innerHTML = open.filter(g => g.seats.indexOf(uid) < 0).map(g => `<li><span class="who"><b>${esc(nameOf(g.creator_id))}</b><span class="sub">${esc(tcLabel(g.time_control))}, ${seated(g)}/4 seated${g.allow_guests ? '' : ', no guests'}</span></span><button class="btn sm primary" data-a4="join" data-id="${g.id}" type="button">Join</button></li>`).join('') || '<li class="muted">No open 4-player games right now.</li>';
+  $('my4').innerHTML = mine.map(g => `<li><span class="who"><b>4-player, code ${esc(g.code)}</b><span class="sub">${esc(tcLabel(g.time_control))}, ${g.status === 'waiting' ? seated(g) + '/4 seated' : 'in progress'}</span></span>${g.status === 'waiting' && g.creator_id === uid ? `<button class="btn sm ghost" data-a4="cancel" data-id="${g.id}" type="button">Cancel</button>` : ''}<button class="btn sm" data-a4="open" data-id="${g.id}" type="button">Open</button></li>`).join('');
 }
 async function onP4ListClick(e) {
   const b = e.target.closest('button[data-a4]');
@@ -2383,16 +2454,17 @@ function commit(from, to, promo) {
   else if (S.mode === 'ai' && !end) aiMove();
 }
 
-// How long a quick-match bot "thinks" before it moves, by time control: [min, max] seconds.
-// Bullet 0.2-1s, Blitz 1-2s, everything else (Original, Long, untimed) 2-4s.
-function botThinkMs() {
-  const [lo, hi] = S.tc === 60 ? [0.2, 1] : S.tc === 180 ? [1, 2] : [2, 4];
+// How long any bot "thinks" before it moves, by time control: [min, max] seconds.
+// Bullet 0.2-1s, Blitz 1-2s, everything else (Original, Long, untimed, 4-player) 2-4s.
+function thinkMs(tc) {
+  const [lo, hi] = tc === 60 ? [0.2, 1] : tc === 180 ? [1, 2] : [2, 4];
   return (lo + Math.random() * (hi - lo)) * 1000;
 }
+const botThinkMs = () => thinkMs(S.tc);
 
 function aiMove() {
   const g = S.game, bot = S.botElo > 0, t0 = Date.now();
-  const wait = bot ? botThinkMs() : 250;
+  const wait = botThinkMs();
   S.aiThinking = true; render();
   const play = m => {
     if (S.game !== g || S.mode !== 'ai') return;
@@ -2408,7 +2480,7 @@ function aiMove() {
   };
   setTimeout(() => {                                   // a beat first, so the "thinking" state paints
     if (S.game !== g || S.mode !== 'ai' || S.over) return play(null);
-    const m = bot ? pickBotMove(g, S.botElo, S.tc === 60 ? 2 : 3, Math.max(120, wait - 100)) : pickAIMove(g, S.aiLevel);
+    const m = bot ? pickBotMove(g, S.botElo, S.tc === 60 ? 2 : 3, Math.max(120, wait - 100)) : pickAIMove(g, S.aiLevel, S.tc === 60 ? 2 : 3);
     // the search itself counts towards the think time; only wait for whatever is left
     setTimeout(() => play(m), Math.max(0, wait - (Date.now() - t0)));
   }, 50);
@@ -2956,7 +3028,8 @@ function bindStatic() {
   $('auth-form').addEventListener('submit', submitAuth);
   $('guest').onclick = () => { S.guest = true; renderUserBox(); goLobby(); };
   $('brand').onclick = () => { if (S.mode) leaveGame(); else if (S.user || S.guest) goLobby(); };
-  ['seg-level', 'seg-color'].forEach(id => initSeg($(id)));
+  ['seg-level', 'seg-color', 'seg-lb'].forEach(id => initSeg($(id)));
+  $('seg-lb').addEventListener('click', () => { S.lbCol = $('seg-lb').dataset.val; loadLobbyData(); });
   $('tc-ai').innerHTML = tcSeg('seg-ai-tc', 0);
   $('tc-local').innerHTML = tcSeg('seg-local-tc', 0);
   initSeg($('seg-ai-tc')); initSeg($('seg-local-tc'));
