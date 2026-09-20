@@ -172,6 +172,28 @@ label input{margin-top:6px}
 .friends{margin-bottom:28px}
 .friends .glist:empty{display:none}
 
+/* 4-player chess */
+#view-game4{--b4:max(300px,min(calc(100vw - 24px),calc(100vh - 250px),700px));--bs:calc(var(--b4) * 8 / 14)}
+#view-game4 .board-wrap{width:var(--b4)}
+.board.board4{width:var(--b4);height:var(--b4);grid-template-columns:repeat(14,1fr);grid-template-rows:repeat(14,1fr);border-radius:10px}
+.board4 .sq.void{visibility:hidden;cursor:default}
+.board4 .pc{-webkit-text-stroke:1.3px #141e26;paint-order:stroke fill;text-shadow:0 2px 3px rgba(0,0,0,.3)}
+.board4 .pc.p0{color:#ee7a6f}.board4 .pc.p1{color:#62b5ff}.board4 .pc.p2{color:#f2c94c}.board4 .pc.p3{color:#59c38e}
+.board4 .pc.dead{color:#8b98a3;opacity:.55}
+.p4bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;width:var(--b4)}
+.p4chip{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-weight:600;font-size:14px;max-width:100%}
+.p4chip .dotc,#moves4 .dotc{width:10px;height:10px;border-radius:50%;background:var(--pc);flex:none}
+.p4chip.turn{border-color:var(--gold);box-shadow:0 0 0 3px rgba(242,184,60,.25)}
+.p4chip.out{opacity:.5}
+.p4chip .p4n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.p4chip .p4c{color:var(--muted);font-weight:500;font-size:12px}
+.p4chip .pts{color:var(--gold);font-family:var(--f-head)}
+.p4chip .tag.chk{color:#ff9d95}
+#moves4 li{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:14px}
+#moves4 li.cur{color:var(--gold);font-weight:700}
+.rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
+.codein{flex:1;min-width:120px;width:auto}
+
 /* notification center */
 .bell{position:relative}
 .bell .badge{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--gold);color:#241a05;font:800 11px/18px var(--f-body);text-align:center}
@@ -285,6 +307,7 @@ label input{margin-top:6px}
           <div class="row" id="tc-local"></div>
           <button class="btn" id="start-local" type="button">Pass and play</button>
         </div>
+        <div class="block" id="p4-block"></div>
         <div class="block" id="online-block"></div>
       </div>
       <div>
@@ -310,6 +333,21 @@ label input{margin-top:6px}
         <ol class="moves" id="moves" aria-label="Move list"></ol>
         <div class="note muted hidden" id="note"></div>
         <div class="controls" id="controls"></div>
+      </aside>
+    </div>
+  </section>
+  <!-- 4-player game -->
+  <section id="view-game4" class="hidden">
+    <div class="game">
+      <div class="board-wrap">
+        <div class="p4bar" id="p4bar"></div>
+        <div class="board board4" id="board4" aria-label="4-player chess board"></div>
+      </div>
+      <aside class="side">
+        <div class="status" id="status4" role="status" aria-live="polite"></div>
+        <div class="invite hidden" id="invite4"></div>
+        <ol class="moves" id="moves4" aria-label="Moves"></ol>
+        <div class="controls" id="controls4"></div>
       </aside>
     </div>
   </section>
@@ -575,7 +613,7 @@ const S = {
 const PC = {}; // profile cache
 
 function showView(name) {
-  ['auth', 'lobby', 'game'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['auth', 'lobby', 'game', 'game4'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
   if (name !== 'lobby') clearInterval(S.lobbyTimer);
   window.scrollTo(0, 0);
 }
@@ -682,7 +720,7 @@ async function handleUser(u) {
     S.guest = false;
     await loadProfile();
     renderUserBox();
-    if (changed) startInbox();
+    if (changed && !isGuest()) startInbox();
     if (changed) { teardownOnline(); S.mode = null; S.game = null; goLobby(); }
   } else {
     S.profile = null;
@@ -696,7 +734,10 @@ async function handleUser(u) {
 
 function renderUserBox() {
   const box = $('userbox');
-  if (S.profile) {
+  if (isGuest()) {
+    box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span><span class="tag">Guest</span><button class="btn ghost sm" id="btn-out" type="button">Leave</button>`;
+    $('btn-out').onclick = signOut;
+  } else if (S.profile) {
     box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span><span class="rate" title="Your rating">${S.profile.rating}</span><button class="btn ghost sm" id="btn-pw" type="button">Password</button><button class="btn ghost sm" id="btn-out" type="button">Sign out</button>`;
     $('btn-out').onclick = signOut;
     $('btn-pw').onclick = changePassword;
@@ -734,10 +775,26 @@ async function cleanupThenLoad() {
 
 function renderLobby() {
   const o = $('online-block'), fb = $('friends-block');
+  renderP4Block();
   if (!S.user) {
-    o.innerHTML = '<h3>Online</h3><p class="muted">Create an account to challenge other players, add friends and earn a rating.</p><button class="btn primary" id="lb-signin" type="button">Sign in or create account</button>';
+    o.innerHTML = `<h3>Join a friend's game</h3>
+      <p class="muted small">Got a game code? Play without an account. Guests can join games but not host them, and their games are unrated.</p>
+      <div class="row"><input id="guest-name" class="codein" placeholder="Your name" maxlength="16" autocomplete="off" aria-label="Your name"><input id="guest-code" class="codein" placeholder="Game code" maxlength="6" autocomplete="off" aria-label="Game code" style="text-transform:uppercase"></div>
+      <div class="row"><button class="btn primary" id="guest-join" type="button">Join as guest</button><button class="btn ghost" id="lb-signin" type="button">Sign in or create account</button></div>`;
+    $('guest-join').onclick = guestJoin;
+    $('guest-code').addEventListener('keydown', e => { if (e.key === 'Enter') guestJoin(); });
     $('lb-signin').onclick = () => { S.guest = false; renderUserBox(); showView('auth'); };
     $('me-card').innerHTML = ''; fb.innerHTML = ''; fb.onclick = null;
+    return;
+  }
+  if (isGuest()) {
+    o.innerHTML = `<h3>Join a game</h3>
+      <div class="row code-row"><input id="code-in" placeholder="Game code" maxlength="6" autocomplete="off" aria-label="Game code"><button class="btn primary" id="join-code" type="button">Join with code</button></div>
+      <div class="msg bad" id="online-msg"></div>`;
+    $('join-code').onclick = joinByCode;
+    $('code-in').addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
+    fb.innerHTML = ''; fb.onclick = null;
+    renderMeCard();
     return;
   }
   o.innerHTML = `
@@ -788,30 +845,34 @@ function renderLobby() {
 
 function renderMeCard() {
   const p = S.profile;
+  if (p && p.is_guest) { $('me-card').innerHTML = '<div class="me"><div><div class="me-name">Playing as a guest</div><div class="muted">Guests can join games but not host them. Their games are unrated. Create an account to host, add friends and get a rating.</div></div></div>'; return; }
   $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div></div></div>` : '';
 }
 
 async function loadLobbyData() {
-  const top = await sb.from('profiles').select('id,username,rating,wins,losses,draws').order('rating', {ascending: false}).order('wins', {ascending: false}).limit(10);
+  const top = await sb.from('profiles').select('id,username,rating,wins,losses,draws').eq('is_guest', false).order('rating', {ascending: false}).order('wins', {ascending: false}).limit(10);
   if (!$('view-lobby').classList.contains('hidden')) renderLeaders(top.data || []);
-  if (!S.user || !$('open-games')) return;
+  if (!S.user || isGuest() || !$('open-games')) return;
   const uid = S.user.id, mineFilter = `white_id.eq.${uid},black_id.eq.${uid}`;
-  const [open, mine, chal, fr] = await Promise.all([
+  const [open, mine, chal, fr, open4, mine4] = await Promise.all([
     sb.from('games').select('*').eq('status', 'waiting').is('invited_id', null).neq('creator_id', uid).order('created_at', {ascending: false}).limit(15),
     sb.from('games').select('*').or(mineFilter).in('status', ['waiting', 'active']).order('updated_at', {ascending: false}).limit(15),
     sb.from('games').select('*').eq('status', 'waiting').eq('invited_id', uid).order('created_at', {ascending: false}),
-    sb.from('friendships').select('*').or(`requester_id.eq.${uid},addressee_id.eq.${uid}`)
+    sb.from('friendships').select('*').or(`requester_id.eq.${uid},addressee_id.eq.${uid}`),
+    sb.from('games4').select('*').eq('status', 'waiting').order('created_at', {ascending: false}).limit(15),
+    sb.from('games4').select('*').in('status', ['waiting', 'active']).filter('seats', 'cs', JSON.stringify([uid])).order('updated_at', {ascending: false}).limit(10)
   ]);
   const msg = $('online-msg');
   if (!msg) return;
-  if (open.error || fr.error) { msg.textContent = 'Online play needs the database set up. Run setup.sql in the Supabase SQL editor.'; return; }
+  if (open.error || fr.error || open4.error) { msg.textContent = 'Online play needs the database set up. Run setup.sql in the Supabase SQL editor.'; return; }
   msg.textContent = '';
-  const frs = fr.data || [];
+  const frs = fr.data || [], g4 = [].concat(open4.data || [], (mine4 && mine4.data) || []);
   const games = [].concat(open.data || [], mine.data || [], chal.data || []);
-  await fetchProfiles(games.flatMap(g => [g.white_id, g.black_id, g.creator_id, g.invited_id]).concat(frs.flatMap(r => [r.requester_id, r.addressee_id])));
+  await fetchProfiles(games.flatMap(g => [g.white_id, g.black_id, g.creator_id, g.invited_id]).concat(frs.flatMap(r => [r.requester_id, r.addressee_id])).concat(g4.flatMap(g => [g.creator_id].concat(seatIds4(g)))));
   if (!$('open-games')) return;
   renderGameLists(open.data || [], mine.data || [], chal.data || []);
   renderFriends(frs);
+  renderP4Lists(open4.data || [], (mine4 && mine4.data) || []);
 }
 
 function renderLeaders(rows) {
@@ -980,16 +1041,6 @@ async function joinGame(id) {
   openOnline(row);
 }
 
-async function joinByCode() {
-  const code = $('code-in').value.trim().toUpperCase();
-  if (code.length < 4) return toast('Enter the 6-character game code.', true);
-  const {data, error} = await sb.from('games').select('id,status,white_id,black_id').eq('code', code).maybeSingle();
-  if (error) return toast(error.message, true);
-  if (!data) return toast('No game found with that code.', true);
-  if (data.status === 'waiting') return joinGame(data.id);
-  if (data.white_id === S.user.id || data.black_id === S.user.id) return resume(data.id);
-  toast('That game has already started.', true);
-}
 
 async function resume(id) {
   const {data, error} = await sb.from('games').select('*').eq('id', id).maybeSingle();
@@ -1006,6 +1057,7 @@ async function cancelGame(id) {
 
 /* ═════════════ Online games ═════════════ */
 function teardownOnline() {
+  teardown4();
   endReview();
   S.sfxPly = -1; S.endPlayed = null; S.lowSec = 0;   // next game starts silent until something happens
   if (S.online) {
@@ -1276,7 +1328,7 @@ function stopInbox() {
   closePanel(); renderBell();
 }
 
-const busyPlaying = () => !!(S.mode && S.game && !S.over);   // don't offer buttons that would pull you out of a live game
+const busyPlaying = () => !!((S.mode && S.game && !S.over) || (G4.on && !G4.over));   // don't offer buttons that would pull you out of a live game
 const refreshLobby = () => { if (!$('view-lobby').classList.contains('hidden')) loadLobbyData(); };
 
 async function acceptFriend(id) {
@@ -1361,7 +1413,7 @@ async function refreshNotes() {
 
 function renderBell() {
   const b = $('btn-bell'), badge = $('bell-badge'), open = !$('npanel').classList.contains('hidden');
-  b.classList.toggle('hidden', !S.user);
+  b.classList.toggle('hidden', !S.user || isGuest());
   if (open) S.notes.forEach(n => { n.read = true; });
   const count = S.pending.friends.length + S.pending.challenges.length + S.notes.filter(n => !n.read).length;
   badge.textContent = count > 9 ? '9+' : String(count);
@@ -1493,6 +1545,706 @@ async function openMatch(gid) {
   toast(`Matched with ${nameOf(oppId)}${p ? ' (' + p.rating + ')' : ''}.`);
   openOnline(data);
 }
+
+/* ═════════════ Guests ═════════════ */
+// A guest is a real (but throwaway) identity created by guest_start(): it can join games hosted by someone
+// with an account, but it can't host, add friends, use matchmaking or change ratings.
+const isGuest = () => !!(S.profile && S.profile.is_guest);
+
+async function findByCode(code) {
+  const a = await sb.from('games').select('*').eq('code', code).maybeSingle();
+  if (a.error) { toast(dbMsg(a.error), true); return null; }
+  if (a.data) return {kind: 'g', row: a.data};
+  const b = await sb.from('games4').select('*').eq('code', code).maybeSingle();
+  return b.data ? {kind: 'g4', row: b.data} : null;
+}
+async function openFound(f) {
+  const me = S.user.id, r = f.row;
+  if (f.kind === 'g') {
+    if (r.status === 'waiting') return joinGame(r.id);
+    if (r.white_id === me || r.black_id === me) return resume(r.id);
+  } else {
+    if (r.seats.includes(me)) return open4Online(r);
+    if (r.status === 'waiting') return join4(r.id);
+  }
+  toast('That game has already started.', true);
+}
+async function joinByCode() {
+  const code = $('code-in').value.trim().toUpperCase();
+  if (code.length < 4) return toast('Enter the 6-character game code.', true);
+  const f = await findByCode(code);
+  if (!f) return toast('No game found with that code.', true);
+  openFound(f);
+}
+async function guestJoin() {
+  const name = $('guest-name').value.trim(), code = $('guest-code').value.trim().toUpperCase();
+  if (code.length < 4) return toast('Enter the 6-character game code from your host.', true);
+  const btn = $('guest-join');
+  btn.disabled = true;
+  try {
+    await ensureSession();
+    const f = await findByCode(code);
+    if (!f) return toast('No game found with that code.', true);
+    const {error} = await sb.rpc('guest_start', {display_name: name});
+    if (error) throw new Error(dbMsg(error));
+    await syncAccount();               // this browser is now signed in as the guest
+    await openFound(f);
+  } catch (e) {
+    toast(e.message || 'Could not join.', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ═════════════ 4-player chess: rules engine ═════════════ */
+// <p4>
+/* 4-player chess rules (free-for-all). 14x14 board with 3x3 corners removed. Seats: 0 Red (bottom), 1 Blue (left),
+   2 Yellow (top), 3 Green (right); turns go 0 > 1 > 2 > 3. Pawns move toward the opposite side and promote to a
+   queen on the 11th rank/file. Castling yes, en passant no. Checkmated or stalemated players are eliminated and
+   their pieces turn "dead" (they stay as blockers and can be captured for 0 points). Last player standing wins. */
+const B4 = 14;
+const i4 = (x, y) => y * B4 + x;
+const ok4 = (x, y) => x >= 0 && x < B4 && y >= 0 && y < B4 && !((x < 3 || x > 10) && (y < 3 || y > 10));
+const C4 = ['Red', 'Blue', 'Yellow', 'Green'];
+const FWD4 = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+const ORTH4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const DIAG4 = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+const KN4 = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]];
+const PTS4 = {p: 1, n: 3, b: 5, r: 5, q: 9, k: 0};
+const sq4 = (x, y) => 'abcdefghijklmn'[x] + (y + 1);
+function parse4(tok) {
+  const m = /^([a-n])(\d{1,2})([a-n])(\d{1,2})$/.exec(tok);
+  return m ? [m[1].charCodeAt(0) - 97, +m[2] - 1, m[3].charCodeAt(0) - 97, +m[4] - 1] : null;
+}
+const line4 = (c, i) => c === 0 ? [3 + i, 0] : c === 1 ? [0, 3 + i] : c === 2 ? [3 + i, 13] : [13, 3 + i];
+const pawn4 = (c, i) => c === 0 ? [3 + i, 1] : c === 1 ? [1, 3 + i] : c === 2 ? [3 + i, 12] : [12, 3 + i];
+const promo4 = (c, x, y) => c === 0 ? y === 10 : c === 1 ? x === 10 : c === 2 ? y === 3 : x === 3;
+
+function new4() {
+  const b = new Array(B4 * B4).fill(null);
+  const rows = [['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'], ['r', 'n', 'b', 'k', 'q', 'b', 'n', 'r']];
+  const kp = [];
+  for (let c = 0; c < 4; c++) {
+    const back = rows[c === 1 || c === 2 ? 1 : 0];
+    for (let i = 0; i < 8; i++) {
+      const [x, y] = line4(c, i), [px, py] = pawn4(c, i);
+      b[i4(x, y)] = {t: back[i], c, dead: false, moved: false};
+      b[i4(px, py)] = {t: 'p', c, dead: false, moved: false};
+      if (back[i] === 'k') kp[c] = [x, y];
+    }
+  }
+  return {b, kp, turn: 0, alive: [true, true, true, true], score: [0, 0, 0, 0], hist: [], quiet: 0, out: [], events: [], draw: false, lastMove: null};
+}
+
+// is (x,y) attacked by a live piece of colour o?
+function attackedBy(b, x, y, o) {
+  const at = (px, py) => ok4(px, py) ? b[i4(px, py)] : null;
+  for (const [dx, dy] of KN4) { const p = at(x + dx, y + dy); if (p && p.c === o && !p.dead && p.t === 'n') return true; }
+  for (const [dx, dy] of ORTH4.concat(DIAG4)) {
+    const diag = dx !== 0 && dy !== 0;
+    for (let k = 1; ; k++) {
+      const px = x + dx * k, py = y + dy * k;
+      if (!ok4(px, py)) break;
+      const p = b[i4(px, py)];
+      if (!p) continue;
+      if (p.c === o && !p.dead && (p.t === 'q' || (diag ? p.t === 'b' : p.t === 'r') || (k === 1 && p.t === 'k'))) return true;
+      break;
+    }
+  }
+  const [fx, fy] = FWD4[o], sides = fx === 0 ? [[1, 0], [-1, 0]] : [[0, 1], [0, -1]];
+  for (const [sx, sy] of sides) { const p = at(x - fx - sx, y - fy - sy); if (p && p.c === o && !p.dead && p.t === 'p') return true; }
+  return false;
+}
+const attackedByAny = (st, x, y, c) => [0, 1, 2, 3].some(o => o !== c && st.alive[o] && attackedBy(st.b, x, y, o));
+const inCheck4 = (st, c) => attackedByAny(st, st.kp[c][0], st.kp[c][1], c);
+
+function castle4(st, x, y, c, out) {
+  const b = st.b, ik = (c === 0 || c === 2) ? x - 3 : y - 3, home = line4(c, ik);
+  if (home[0] !== x || home[1] !== y || inCheck4(st, c)) return;
+  for (const dir of [-1, 1]) {
+    const ri = dir < 0 ? 0 : 7, [rx, ry] = line4(c, ri), rook = b[i4(rx, ry)];
+    if (!rook || rook.t !== 'r' || rook.c !== c || rook.dead || rook.moved) continue;
+    let clear = true;
+    for (let i = Math.min(ik, ri) + 1; i < Math.max(ik, ri); i++) { const [ex, ey] = line4(c, i); if (b[i4(ex, ey)]) { clear = false; break; } }
+    if (!clear) continue;
+    const safe = [1, 2].every(k => { const [sx, sy] = line4(c, ik + dir * k); return !attackedByAny(st, sx, sy, c); });
+    if (safe) { const [tx, ty] = line4(c, ik + 2 * dir); out.push([tx, ty]); }
+  }
+}
+
+function pseudo4(st, x, y) {
+  const b = st.b, p = b[i4(x, y)], c = p.c, out = [];
+  const step = (tx, ty) => { if (!ok4(tx, ty)) return false; const q = b[i4(tx, ty)]; if (q && q.c === c) return false; out.push([tx, ty]); return !q; };
+  if (p.t === 'p') {
+    const [fx, fy] = FWD4[c], side = fx === 0 ? [[1, 0], [-1, 0]] : [[0, 1], [0, -1]];
+    const ox = x + fx, oy = y + fy;
+    if (ok4(ox, oy) && !b[i4(ox, oy)]) {
+      out.push([ox, oy]);
+      const start = c === 0 ? y === 1 : c === 1 ? x === 1 : c === 2 ? y === 12 : x === 12;
+      const tx = ox + fx, ty = oy + fy;
+      if (start && ok4(tx, ty) && !b[i4(tx, ty)]) out.push([tx, ty]);
+    }
+    for (const [sx, sy] of side) {
+      const tx = x + fx + sx, ty = y + fy + sy;
+      if (ok4(tx, ty)) { const q = b[i4(tx, ty)]; if (q && q.c !== c) out.push([tx, ty]); }
+    }
+  } else if (p.t === 'n') {
+    for (const [dx, dy] of KN4) step(x + dx, y + dy);
+  } else if (p.t === 'k') {
+    for (const [dx, dy] of ORTH4.concat(DIAG4)) step(x + dx, y + dy);
+    if (!p.moved) castle4(st, x, y, c, out);
+  } else {
+    const dirs = p.t === 'r' ? ORTH4 : p.t === 'b' ? DIAG4 : ORTH4.concat(DIAG4);
+    for (const [dx, dy] of dirs) for (let k = 1; step(x + dx * k, y + dy * k); k++);
+  }
+  return out;
+}
+
+function make4(st, fx, fy, tx, ty) {
+  const b = st.b, p = b[i4(fx, fy)], cap = b[i4(tx, ty)];
+  const rec = {fx, fy, tx, ty, p, cap, pm: p.moved, pt: p.t, rook: null, kp: null};
+  b[i4(tx, ty)] = p; b[i4(fx, fy)] = null; p.moved = true;
+  if (p.t === 'k') {
+    rec.kp = st.kp[p.c]; st.kp[p.c] = [tx, ty];
+    const dx = tx - fx, dy = ty - fy;
+    if (Math.abs(dx) + Math.abs(dy) === 2 && (dx === 0 || dy === 0)) {          // castling: the rook hops over the king
+      const sx = Math.sign(dx), sy = Math.sign(dy);
+      let rx = tx + sx, ry = ty + sy;
+      while (ok4(rx, ry) && !b[i4(rx, ry)]) { rx += sx; ry += sy; }
+      const r = b[i4(rx, ry)], mx = fx + sx, my = fy + sy;
+      rec.rook = {r, rx, ry, mx, my, rm: r.moved};
+      b[i4(mx, my)] = r; b[i4(rx, ry)] = null; r.moved = true;
+    }
+  }
+  if (p.t === 'p' && promo4(p.c, tx, ty)) { p.t = 'q'; p.promoted = true; }
+  return rec;
+}
+function unmake4(st, rec) {
+  const b = st.b, p = rec.p;
+  if (rec.pt === 'p') { p.t = 'p'; delete p.promoted; }
+  b[i4(rec.fx, rec.fy)] = p; b[i4(rec.tx, rec.ty)] = rec.cap; p.moved = rec.pm;
+  if (rec.kp) st.kp[p.c] = rec.kp;
+  if (rec.rook) { const q = rec.rook; b[i4(q.rx, q.ry)] = q.r; b[i4(q.mx, q.my)] = null; q.r.moved = q.rm; }
+}
+
+function legal4(st, c) {
+  const res = [];
+  for (let y = 0; y < B4; y++) for (let x = 0; x < B4; x++) {
+    const p = st.b[i4(x, y)];
+    if (!p || p.c !== c || p.dead) continue;
+    for (const [tx, ty] of pseudo4(st, x, y)) {
+      const rec = make4(st, x, y, tx, ty);
+      const ok = !inCheck4(st, c);
+      unmake4(st, rec);
+      if (ok) res.push([x, y, tx, ty]);
+    }
+  }
+  return res;
+}
+
+const alive4 = st => st.alive.filter(Boolean).length;
+function kill4(st, c, why) {
+  st.alive[c] = false; st.out.push(c);
+  for (const p of st.b) if (p && p.c === c) p.dead = true;
+  st.events.push({t: why, c});
+}
+// Work out who moves next, eliminating anyone who is checkmated or stalemated on the way.
+function settle4(st, last) {
+  let c = last;
+  for (;;) {
+    if (alive4(st) <= 1) { st.turn = -1; return; }
+    do { c = (c + 1) % 4; } while (!st.alive[c]);
+    if (legal4(st, c).length) { st.turn = c; return; }
+    const mate = inCheck4(st, c);
+    if (mate) st.score[last] += 20; else st.score[c] += 20;
+    kill4(st, c, mate ? 'mate' : 'stalemate');
+    st.events[st.events.length - 1].by = last;
+  }
+}
+
+// Apply one move token ("h2h4") or resignation ("R2"). Returns false if it is not allowed.
+function play4(st, tok) {
+  if (st.turn < 0) return false;
+  st.events = [];
+  if (tok[0] === 'R') {
+    const c = +tok.slice(1);
+    if (!(c >= 0 && c < 4) || !st.alive[c]) return false;
+    kill4(st, c, 'resign'); st.hist.push(tok); st.lastMove = null;
+    if (alive4(st) <= 1) st.turn = -1; else if (st.turn === c) settle4(st, c);
+    return true;
+  }
+  const m = parse4(tok);
+  if (!m) return false;
+  const [fx, fy, tx, ty] = m, c = st.turn, p = st.b[i4(fx, fy)];
+  if (!p || p.c !== c || p.dead) return false;
+  if (!legal4(st, c).some(l => l[0] === fx && l[1] === fy && l[2] === tx && l[3] === ty)) return false;
+  const cap = st.b[i4(tx, ty)], wasPawn = p.t === 'p';
+  const rec = make4(st, fx, fy, tx, ty);
+  if (cap && !cap.dead) st.score[c] += cap.promoted ? 1 : PTS4[cap.t];
+  st.quiet = (cap || wasPawn) ? 0 : st.quiet + 1;
+  st.hist.push(tok);
+  st.lastMove = {from: [fx, fy], to: [tx, ty], cap: !!cap, promo: rec.pt === 'p' && p.t === 'q', castle: !!rec.rook, by: c};
+  if (st.quiet >= (alive4(st) <= 2 ? 50 : 100)) { st.draw = true; st.turn = -1; } else settle4(st, c);
+  return true;
+}
+function replay4(tokens) {
+  const st = new4();
+  for (const t of tokens) if (!play4(st, t)) break;
+  return st;
+}
+const tok4 = m => sq4(m[0], m[1]) + sq4(m[2], m[3]);
+// final standings, best first (a draw shares first place)
+function standings4(st) {
+  if (st.draw) return {draw: true, order: [0, 1, 2, 3].filter(c => st.alive[c])};
+  const win = [0, 1, 2, 3].find(c => st.alive[c]);
+  return {draw: false, order: [win].concat(st.out.slice().reverse())};
+}
+
+// A simple bot: grabs material, avoids leaving pieces where they can be taken, hunts checks and mates, develops
+// and pushes pawns. Not strong, but it plays purposefully.
+function bot4Move(st, c) {
+  const moves = legal4(st, c);
+  if (!moves.length) return null;
+  let best = null, bs = -1e9;
+  for (const m of moves) {
+    const [fx, fy, tx, ty] = m, p = st.b[i4(fx, fy)], cap = st.b[i4(tx, ty)];
+    const val = PTS4[p.t] || 0.5;
+    let s = Math.random() * 0.6;
+    if (cap && !cap.dead) s += (cap.promoted ? 1 : PTS4[cap.t]) * 1.15;
+    const wasHit = p.t !== 'k' && attackedByAny(st, fx, fy, c);
+    const rec = make4(st, fx, fy, tx, ty);
+    if (p.t !== 'k' && attackedByAny(st, tx, ty, c)) s -= val * 0.9;
+    if (wasHit) s += val * 0.5;
+    if (rec.pt === 'p' && p.t === 'q') s += 8;
+    if (rec.rook) s += 0.7;
+    for (let o = 0; o < 4; o++) {
+      if (o === c || !st.alive[o] || !inCheck4(st, o)) continue;
+      s += 1;
+      if (legal4(st, o).length === 0) s += 25;                    // that is checkmate
+    }
+    if (p.t !== 'k') for (const [ax, ay] of pseudo4(st, tx, ty)) {   // what the moved piece now attacks
+      const q = st.b[i4(ax, ay)];
+      if (q && !q.dead && q.c !== c) s += (PTS4[q.t] || 0) * 0.2;
+    }
+    unmake4(st, rec);
+    if (!p.moved && (p.t === 'n' || p.t === 'b')) s += 0.35;
+    if (p.t === 'p') s += 0.25;
+    if (p.t === 'k' && !rec.rook) s -= 0.4;
+    s += (6.5 - Math.max(Math.abs(tx - 6.5), Math.abs(ty - 6.5))) * 0.04;
+    if (s > bs) { bs = s; best = m; }
+  }
+  return best;
+}
+// </p4>
+
+/* ═════════════ 4-player chess: screen ═════════════ */
+const G4 = {on: false, mode: null, st: null, log: [], me: -1, orient: 0, sel: null, targets: [], names: ['', '', '', ''],
+  bots: [false, false, false, false], over: null, overShown: false, review: null, online: null, botTimer: null, sfxPly: -1, lastTurnAt: 0, tickT: null};
+// the board is turned so that your own colour is at the bottom
+const G4COL = ['#ee7a6f', '#62b5ff', '#f2c94c', '#59c38e'];
+const toBoard4 = (o, sx, sy) => o === 0 ? [sx, sy] : o === 1 ? [sy, 13 - sx] : o === 2 ? [13 - sx, 13 - sy] : [13 - sy, sx];
+
+function logEntry4(st, tok, c) {
+  let txt;
+  if (tok[0] === 'R') txt = 'resigned';
+  else {
+    const m = st.lastMove;
+    txt = sq4(m.from[0], m.from[1]) + (m.cap ? ' x ' : ' to ') + sq4(m.to[0], m.to[1]) + (m.promo ? ' (queen)' : '') + (m.castle ? ' (castles)' : '');
+  }
+  st.events.forEach(e => {
+    if (e.t === 'mate') txt += `. ${C4[e.c]} is checkmated`;
+    else if (e.t === 'stalemate') txt += `. ${C4[e.c]} is stalemated`;
+  });
+  return {c, tok, txt};
+}
+function rebuild4(tokens) {
+  const st = new4(), log = [];
+  for (const t of tokens) {
+    const c = st.turn;
+    if (!play4(st, t)) break;
+    log.push(logEntry4(st, t, t[0] === 'R' ? +t.slice(1) : c));
+  }
+  return {st, log};
+}
+
+function start4(mode) {
+  teardownOnline();
+  S.mode = 'p4'; S.game = null;
+  Object.assign(G4, {on: true, mode, st: new4(), log: [], sel: null, targets: [], over: null, overShown: false, review: null, online: null, sfxPly: -1, lastTurnAt: Date.now()});
+  if (mode === 'bots') {
+    const pool = UNIQUE_BOT_NAMES.slice().sort(() => Math.random() - 0.5);
+    G4.me = 0; G4.orient = 0;
+    G4.names = [S.profile ? S.profile.username : 'You', pool[0], pool[1], pool[2]];
+    G4.bots = [false, true, true, true];
+  } else {
+    G4.me = -1; G4.orient = 0; G4.names = C4.slice(); G4.bots = [false, false, false, false];
+  }
+  showView('game4'); render4(); maybeBot4();
+}
+
+function teardown4() {
+  clearTimeout(G4.botTimer);
+  const o = G4.online;
+  if (o) { if (o.channel) sb.removeChannel(o.channel); clearInterval(o.poll); }
+  clearInterval(G4.tickT);
+  G4.on = false; G4.online = null; G4.review = null; G4.mode = null;
+}
+
+function canMove4() {
+  const st = G4.st;
+  if (!G4.on || !st || G4.over || G4.review || st.turn < 0) return false;
+  if (G4.mode === 'local') return true;
+  if (G4.mode === 'bots') return st.turn === G4.me;
+  const o = G4.online;
+  return !!o && o.row.status === 'active' && !o.busy && st.turn === G4.me;
+}
+
+function viewState4() { return G4.review ? replay4(G4.st.hist.slice(0, G4.review.ply)) : G4.st; }
+
+function render4() {
+  const st = viewState4();
+  renderBoard4(st); renderBars4(st); renderSide4(st);
+  if (!G4.over && G4.st.turn < 0 && (G4.mode !== 'online' || G4.online.row.status !== 'waiting')) {
+    G4.over = G4.online && G4.online.row.result ? G4.online.row.result : standings4(G4.st);
+  }
+  syncSfx4();
+  if (G4.over && !G4.overShown && !G4.review) showOver4();
+}
+
+function renderBoard4(st) {
+  const chk = new Set(), last = st.lastMove;
+  for (let c = 0; c < 4; c++) if (st.alive[c] && inCheck4(st, c)) chk.add(i4(st.kp[c][0], st.kp[c][1]));
+  let html = '';
+  for (let sy = 13; sy >= 0; sy--) for (let sx = 0; sx < 14; sx++) {
+    const [x, y] = toBoard4(G4.orient, sx, sy);
+    if (!ok4(x, y)) { html += '<div class="sq void"></div>'; continue; }
+    const p = st.b[i4(x, y)];
+    let cls = 'sq ' + ((x + y) % 2 === 0 ? 'dark' : 'light');
+    if (last && ((last.from[0] === x && last.from[1] === y) || (last.to[0] === x && last.to[1] === y))) cls += ' last';
+    if (G4.sel && G4.sel[0] === x && G4.sel[1] === y) cls += ' sel';
+    if (G4.targets.some(t => t[0] === x && t[1] === y)) cls += ' target' + (p ? ' cap' : '');
+    if (chk.has(i4(x, y))) cls += ' check';
+    html += `<div class="${cls}" data-x="${x}" data-y="${y}">${p ? `<span class="pc p${p.c}${p.dead ? ' dead' : ''}">${GLYPH[p.t]}</span>` : ''}</div>`;
+  }
+  $('board4').innerHTML = html;
+}
+
+function seatName4(c) {
+  const o = G4.online;
+  if (o && o.row.status === 'waiting' && !G4.names[c]) return 'Empty seat';
+  return G4.names[c] || C4[c];
+}
+
+function renderBars4(st) {
+  const o = G4.online, host = !!(o && S.user && o.row.creator_id === S.user.id);
+  $('p4bar').innerHTML = [0, 1, 2, 3].map(c => {
+    const out = !st.alive[c], turn = !G4.over && !G4.review && st.turn === c && (!o || o.row.status === 'active');
+    const chk = st.alive[c] && inCheck4(st, c) && !G4.over;
+    const human = !G4.bots[c] && !!G4.names[c];
+    const stale = host && o.row.status === 'active' && turn && human && c !== G4.me && Date.now() - G4.lastTurnAt > 40000;
+    const tags = (G4.bots[c] ? '<span class="tag">bot</span>' : '') + (c === G4.me ? '<span class="tag">you</span>' : '') +
+      (out ? '<span class="tag">out</span>' : '') + (chk ? '<span class="tag chk">check</span>' : '');
+    return `<div class="p4chip${turn ? ' turn' : ''}${out ? ' out' : ''}" style="--pc:${G4COL[c]}"><span class="dotc"></span><span class="p4n">${esc(seatName4(c))}</span><span class="p4c">${C4[c]}</span><span class="pts" title="Points">${st.score[c]}</span>${tags}${stale ? `<button class="btn sm ghost" data-a4="bot" data-seat="${c}" type="button">Replace with bot</button>` : ''}</div>`;
+  }).join('');
+}
+
+function statusText4(st) {
+  const o = G4.online;
+  if (G4.review) return G4.review.ply === 0 ? 'Overview: starting position.' : `Overview: after move ${G4.review.ply} of ${G4.st.hist.length}.`;
+  if (G4.over) {
+    const ov = G4.over;
+    if (ov.draw) return 'Draw. Nobody could make progress.';
+    const w = ov.order[0];
+    if (G4.mode === 'local') return `${C4[w]} wins.`;
+    if (G4.me === w) return 'You win.';
+    const place = ov.order.indexOf(G4.me);
+    return place > 0 ? `${seatName4(w)} wins. You finished ${['1st', '2nd', '3rd', '4th'][place]}.` : `${seatName4(w)} wins.`;
+  }
+  if (o && o.row.status === 'waiting') return o.row.creator_id === S.user.id ? 'Waiting for players. Start when you are ready; empty seats get bots.' : 'Waiting for the host to start the game.';
+  const c = st.turn, ev = st.events.map(e => e.t === 'mate' ? `${C4[e.c]} was checkmated (+20 to ${C4[e.by]}).` : e.t === 'stalemate' ? `${C4[e.c]} was stalemated.` : e.t === 'resign' ? `${C4[e.c]} resigned.` : '').filter(Boolean).join(' ');
+  const mine = G4.mode === 'local' ? `${C4[c]} to move.` : (c === G4.me ? 'Your move.' : `${seatName4(c)} to move.`);
+  return (ev ? ev + ' ' : '') + mine + (inCheck4(st, c) ? ' Check.' : '');
+}
+
+function renderSide4(st) {
+  const s = $('status4');
+  s.textContent = statusText4(st);
+  s.className = 'status' + (G4.over ? ' done' : '');
+
+  const o = G4.online, inv = $('invite4');
+  if (o && o.row.status === 'waiting') {
+    inv.classList.remove('hidden');
+    inv.innerHTML = `<div class="muted">Share this code${o.row.allow_guests ? '. Guests can join without an account' : ''}</div><div class="big">${esc(o.row.code)}</div><button class="btn sm" id="copy4" type="button">Copy code</button>`;
+    $('copy4').onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText(o.row.code).then(() => toast('Code copied.')); };
+  } else inv.classList.add('hidden');
+
+  const rp = G4.review ? G4.review.ply : -1;
+  $('moves4').innerHTML = G4.log.map((e, i) => `<li${rp === i + 1 ? ' class="cur"' : ''}><span class="dotc" style="background:${G4COL[e.c]}"></span><span>${esc(e.txt)}</span></li>`).join('');
+  const ml = $('moves4');
+  if (G4.review) { const cur = ml.querySelector('.cur'); if (cur) ml.scrollTop = Math.max(0, cur.offsetTop - ml.clientHeight / 2); } else ml.scrollTop = ml.scrollHeight;
+
+  const c = $('controls4'); c.innerHTML = '';
+  const add = (label, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + (cls || ''); b.textContent = label; b.onclick = fn; c.appendChild(b); return b; };
+  const total = G4.st.hist.length;
+  if (G4.review) {
+    const r = G4.review;
+    add('First', () => setPly4(0)).disabled = r.ply === 0;
+    add('Back', () => setPly4(r.ply - 1)).disabled = r.ply === 0;
+    add('Next', () => setPly4(r.ply + 1)).disabled = r.ply === total;
+    add('Last', () => setPly4(total)).disabled = r.ply === total;
+    add('Exit overview', () => { G4.review = null; render4(); }, 'primary');
+    return;
+  }
+  if (o && o.row.status === 'waiting' && o.row.creator_id === S.user.id) add('Start game', start4Online, 'primary');
+  if (G4.over && total) add('Overview', () => { G4.review = {ply: total}; render4(); }, 'primary');
+  add('Rotate board', () => { G4.orient = (G4.orient + 1) % 4; render4(); });
+  if (!o && !G4.over) add('New game', () => start4(G4.mode));
+  if (o && o.row.status === 'active' && !G4.over && G4.me >= 0 && st.alive[G4.me]) add('Resign', confirmResign4, 'danger');
+  add('Rules', showRules4, 'ghost');
+  add('Back to lobby', leaveGame, 'ghost');
+}
+function setPly4(p) { if (!G4.review) return; G4.review.ply = Math.max(0, Math.min(G4.st.hist.length, p)); render4(); }
+
+function showRules4() {
+  modal('4-player chess', `<ul class="rules">
+    <li>Four players share a 14 by 14 board. Red starts at the bottom, then Blue (left), Yellow (top) and Green (right). Turns go clockwise.</li>
+    <li>Pieces move as in normal chess. Pawns march toward the opposite side and become queens on the 11th rank or file. Castling is allowed. There is no en passant.</li>
+    <li>You must get out of check. If you have no legal move you are out: checkmate gives the player who did it 20 points, stalemate gives you 20.</li>
+    <li>An eliminated player's pieces turn grey. They stay in the way and can be captured for no points.</li>
+    <li>Captures score points: pawn 1, knight 3, bishop 5, rook 5, queen 9. The last player standing wins, and points are just for bragging rights.</li>
+    <li>If 100 moves pass with no capture or pawn move (50 once two players are left), the game is a draw.</li></ul>`, [{label: 'Got it', cls: 'primary'}], true);
+}
+function showOver4() {
+  const o = G4.over;
+  if (!o || G4.overShown) return;
+  G4.overShown = true;
+  const nm = c => G4.names[c] || C4[c];
+  const list = o.draw ? `<p>A draw between ${o.order.map(c => C4[c]).join(', ')}.</p>` : `<ol>${o.order.map((c, i) => `<li>${['1st', '2nd', '3rd', '4th'][i]}: ${esc(nm(c))} (${C4[c]})</li>`).join('')}</ol>`;
+  modal(o.draw ? 'Draw' : `${nm(o.order[0])} wins`, `${list}<p class="muted small">Points: ${[0, 1, 2, 3].map(c => `${C4[c]} ${G4.st.score[c]}`).join(', ')}. 4-player games are unrated.</p>`, [
+    {label: 'Overview', cls: 'primary', onClick: () => { G4.review = {ply: G4.st.hist.length}; render4(); }},
+    {label: 'Close', cls: 'ghost'}
+  ], true);
+}
+function confirmResign4() {
+  modal('Resign this game?', '<p>Your pieces turn grey and stay on the board. The game goes on without you.</p>', [
+    {label: 'Resign', cls: 'danger', onClick: () => { commit4('R' + G4.me); }},
+    {label: 'Keep playing'}
+  ]);
+}
+
+// sounds: one per move, plus the result
+function syncSfx4() {
+  if (G4.review) return;
+  const st = G4.st, n = st.hist.length, grew = G4.sfxPly >= 0 && n > G4.sfxPly;
+  G4.sfxPly = n;
+  if (grew) {
+    const m = st.lastMove, ev = st.events;
+    if (ev.some(e => e.t === 'mate' || e.t === 'stalemate')) sfx('check');
+    else if ([0, 1, 2, 3].some(c => st.alive[c] && inCheck4(st, c))) sfx('check');
+    else if (m && m.cap) sfx('capture');
+    else if (m && m.castle) sfx('castle');
+    else if (m && m.promo) sfx('promote');
+    else sfx('move');
+  }
+  if (G4.over && !G4.endPlayed) {
+    G4.endPlayed = true;
+    setTimeout(() => sfx(G4.over.draw ? 'draw' : (G4.mode === 'local' || G4.over.order[0] === G4.me) ? 'win' : 'lose'), grew ? 280 : 0);
+  }
+}
+
+function onBoard4(e) {
+  const el = e.target.closest('.sq');
+  if (!el || el.classList.contains('void') || !canMove4()) return;
+  const x = +el.dataset.x, y = +el.dataset.y, st = G4.st;
+  if (G4.sel && G4.targets.some(t => t[0] === x && t[1] === y)) return commit4(tok4([G4.sel[0], G4.sel[1], x, y]));
+  const p = st.b[i4(x, y)];
+  if (p && p.c === st.turn && !p.dead && !(G4.sel && G4.sel[0] === x && G4.sel[1] === y)) {
+    G4.sel = [x, y];
+    G4.targets = legal4(st, st.turn).filter(l => l[0] === x && l[1] === y).map(l => [l[2], l[3]]);
+  } else { G4.sel = null; G4.targets = []; }
+  render4();
+}
+
+function commit4(tok) {
+  const st = G4.st, c = tok[0] === 'R' ? +tok.slice(1) : st.turn;
+  if (!play4(st, tok)) return false;
+  G4.log.push(logEntry4(st, tok, c));
+  G4.sel = null; G4.targets = []; G4.lastTurnAt = Date.now();
+  render4();
+  if (G4.mode === 'online') send4();
+  maybeBot4();
+  return true;
+}
+
+// bots think for a moment; in online games only the host's browser plays for them
+function maybeBot4() {
+  clearTimeout(G4.botTimer);
+  const st = G4.st;
+  if (!G4.on || !st || G4.over || G4.review || st.turn < 0) return;
+  const c = st.turn;
+  if (!G4.bots[c]) return;
+  if (G4.mode === 'online' && !(G4.online.row.status === 'active' && G4.online.row.creator_id === S.user.id)) return;
+  G4.botTimer = setTimeout(() => {
+    if (!G4.on || G4.st !== st || st.turn !== c || G4.review || G4.over) return;
+    const m = bot4Move(st, c);
+    if (m) commit4(tok4(m));
+  }, 700 + Math.random() * 900);
+}
+
+/* ═════════════ 4-player chess: online ═════════════ */
+const seatIds4 = row => row.seats.filter(s => s && s.indexOf('bot:') !== 0);
+function seatInfo4(row) {
+  G4.names = row.seats.map(s => !s ? '' : s.indexOf('bot:') === 0 ? s.slice(4) : nameOf(s));
+  G4.bots = row.seats.map(s => !!s && s.indexOf('bot:') === 0);
+  G4.me = row.seats.indexOf(S.user.id);
+}
+
+async function create4() {
+  const allow = $('p4-guests') ? $('p4-guests').checked : true;
+  const {data, error} = await sb.from('games4').insert({creator_id: S.user.id, seats: [S.user.id, null, null, null], allow_guests: allow}).select().single();
+  if (error) return toast(dbMsg(error), true);
+  open4Online(data);
+}
+async function join4(id) {
+  const {data, error} = await sb.rpc('join_game4', {gid: id});
+  const row = Array.isArray(data) ? data[0] : data;
+  if (error || !row) return toast(error ? dbMsg(error) : 'Could not join that game.', true);
+  open4Online(row);
+}
+async function open4Online(row) {
+  teardownOnline();
+  await fetchProfiles(seatIds4(row));
+  S.mode = 'p4'; S.game = null;
+  const r = rebuild4(row.moves);
+  Object.assign(G4, {on: true, mode: 'online', st: r.st, log: r.log, sel: null, targets: [], over: null, overShown: false, endPlayed: false, review: null,
+    online: {row, busy: false, settled: false, channel: null, poll: null}, sfxPly: -1, lastTurnAt: Date.parse(row.updated_at) || Date.now()});
+  seatInfo4(row);
+  G4.orient = Math.max(0, G4.me);
+  if (row.status === 'finished') { G4.over = row.result || standings4(r.st); G4.overShown = true; G4.endPlayed = true; }
+  showView('game4'); render4();
+  const id = row.id;
+  G4.online.channel = sb.channel('g4-' + id)
+    .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games4', filter: 'id=eq.' + id}, p => applyRow4(p.new))
+    .subscribe();
+  G4.online.poll = setInterval(pollOnline4, 3000);
+  G4.tickT = setInterval(() => { if (G4.on && G4.online && G4.online.row.status === 'active') renderBars4(viewState4()); }, 5000);   // shows "Replace with bot" once someone is slow
+  maybeBot4();
+  if (G4.over) settle4Online();
+}
+async function pollOnline4() {
+  const o = G4.online;
+  if (!o || o.busy) return;
+  const {data} = await sb.from('games4').select('*').eq('id', o.row.id).maybeSingle();
+  if (data) applyRow4(data);
+}
+async function applyRow4(row) {
+  const o = G4.online;
+  if (!o || o.row.id !== row.id) return;
+  const cur = o.row, st = G4.st;
+  if (row.moves.length < cur.moves.length) return;
+  const same = row.moves.length === cur.moves.length && row.status === cur.status && JSON.stringify(row.seats) === JSON.stringify(cur.seats);
+  if (same) return;
+  await fetchProfiles(seatIds4(row));
+  if (G4.online !== o) return;
+  o.row = row;
+  seatInfo4(row);
+  if (row.moves.length > st.hist.length) {
+    if (st.hist.every((t, i) => t === row.moves[i])) {           // just play the new moves on top of what we have
+      for (let i = st.hist.length; i < row.moves.length; i++) {
+        const tok = row.moves[i], c = tok[0] === 'R' ? +tok.slice(1) : st.turn;
+        if (!play4(st, tok)) break;
+        G4.log.push(logEntry4(st, tok, c));
+      }
+    } else { const r = rebuild4(row.moves); G4.st = r.st; G4.log = r.log; }
+    G4.lastTurnAt = Date.now(); G4.sel = null; G4.targets = [];
+  }
+  if (row.status === 'finished' && !G4.over) G4.over = row.result || standings4(G4.st);
+  render4(); maybeBot4();
+  if (G4.over) settle4Online();
+}
+async function send4() {
+  const o = G4.online, st = G4.st;
+  o.busy = true;
+  const patch = {moves: st.hist.slice(), turn: Math.max(0, st.turn)};
+  if (st.turn < 0) { patch.status = 'finished'; patch.result = standings4(st); }
+  const {data, error} = await sb.from('games4').update(patch).eq('id', o.row.id).eq('status', 'active').select().single();
+  o.busy = false;
+  if (G4.online !== o) return;
+  if (error) { toast(dbMsg(error), true); return resync4(); }
+  o.row = data;
+  if (st.turn < 0) { G4.over = patch.result; render4(); settle4Online(); }
+}
+async function resync4() {
+  const o = G4.online;
+  if (!o) return;
+  const {data} = await sb.from('games4').select('*').eq('id', o.row.id).maybeSingle();
+  if (!data || G4.online !== o) return;
+  o.row = data; seatInfo4(data);
+  const r = rebuild4(data.moves);
+  G4.st = r.st; G4.log = r.log; G4.sel = null; G4.targets = [];
+  if (data.status === 'finished') G4.over = data.result || standings4(r.st);
+  render4(); maybeBot4();
+}
+async function settle4Online() {
+  const o = G4.online;
+  if (!o || o.settled) return;
+  o.settled = true;
+  clearInterval(o.poll);
+  await sb.rpc('acknowledge_game4', {gid: o.row.id});
+}
+async function start4Online() {
+  const o = G4.online;
+  const names = UNIQUE_BOT_NAMES.slice().sort(() => Math.random() - 0.5).slice(0, 3);
+  const {data, error} = await sb.rpc('start_game4', {gid: o.row.id, bot_names: names});
+  const row = Array.isArray(data) ? data[0] : data;
+  if (error || !row) return toast(error ? dbMsg(error) : 'Could not start the game.', true);
+  G4.lastTurnAt = Date.now();
+  applyRow4(row);
+}
+async function replaceWithBot4(seat) {
+  const o = G4.online;
+  const {data, error} = await sb.rpc('replace_with_bot4', {gid: o.row.id, seat, bot_name: pick(UNIQUE_BOT_NAMES)});
+  if (error) return toast(dbMsg(error), true);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (row) { await applyRow4(row); toast('That seat is now played by a bot.'); }
+}
+
+/* ═════════════ 4-player chess: lobby ═════════════ */
+function renderP4Block() {
+  const b = $('p4-block'), acct = !!(S.user && !isGuest());
+  b.innerHTML = `<h3>4-player chess</h3>
+    <p class="muted small">Four colours on one board. Last player standing wins. <button class="link" id="p4-rules" type="button">How it works</button></p>
+    <div class="row"><button class="btn primary" id="p4-bots" type="button">Play with 3 bots</button><button class="btn" id="p4-local" type="button">Pass and play</button></div>` +
+    (acct ? `<h4>Host an online game</h4>
+      <div class="row"><button class="btn" id="p4-host" type="button">Host a game</button><label class="ntoggle"><input type="checkbox" id="p4-guests" checked> Guests can join</label></div>
+      <ul class="glist" id="my4"></ul>
+      <h4>Open 4-player games</h4>
+      <ul class="glist" id="open4"><li class="muted">Loading…</li></ul>`
+    : `<p class="muted small">${S.user ? 'As a guest you can join 4-player games with a code.' : 'Sign in to host an online 4-player game, or join one with a code.'}</p>`);
+  $('p4-rules').onclick = showRules4;
+  $('p4-bots').onclick = () => start4('bots');
+  $('p4-local').onclick = () => start4('local');
+  if (acct) {
+    $('p4-host').onclick = create4;
+    ['open4', 'my4'].forEach(id => $(id).addEventListener('click', onP4ListClick));
+  }
+}
+function renderP4Lists(open, mine) {
+  if (!$('open4')) return;
+  const uid = S.user.id, seated = g => g.seats.filter(Boolean).length;
+  $('open4').innerHTML = open.filter(g => g.seats.indexOf(uid) < 0).map(g => `<li><span class="who"><b>${esc(nameOf(g.creator_id))}</b><span class="sub">${seated(g)}/4 seated${g.allow_guests ? '' : ', no guests'}</span></span><button class="btn sm primary" data-a4="join" data-id="${g.id}" type="button">Join</button></li>`).join('') || '<li class="muted">No open 4-player games right now.</li>';
+  $('my4').innerHTML = mine.map(g => `<li><span class="who"><b>4-player, code ${esc(g.code)}</b><span class="sub">${g.status === 'waiting' ? seated(g) + '/4 seated' : 'in progress'}</span></span>${g.status === 'waiting' && g.creator_id === uid ? `<button class="btn sm ghost" data-a4="cancel" data-id="${g.id}" type="button">Cancel</button>` : ''}<button class="btn sm" data-a4="open" data-id="${g.id}" type="button">Open</button></li>`).join('');
+}
+async function onP4ListClick(e) {
+  const b = e.target.closest('button[data-a4]');
+  if (!b) return;
+  const id = b.dataset.id;
+  if (b.dataset.a4 === 'join') return join4(id);
+  if (b.dataset.a4 === 'cancel') { await sb.from('games4').delete().eq('id', id); return loadLobbyData(); }
+  const {data} = await sb.from('games4').select('*').eq('id', id).maybeSingle();
+  if (data) open4Online(data); else toast('That game is gone.', true);
+}
+
 
 /* ═════════════ Clocks ═════════════ */
 let SERVER_OFFSET = 0;   // server time minus this device's time, so online clocks agree
@@ -2189,6 +2941,8 @@ function miniBoard(el, fen) {
 
 /* ═════════════ Wiring ═════════════ */
 function bindStatic() {
+  $('board4').addEventListener('click', onBoard4);
+  $('p4bar').addEventListener('click', e => { const b = e.target.closest('button[data-a4="bot"]'); if (b) replaceWithBot4(+b.dataset.seat); });
   renderBell();
   $('btn-bell').onclick = togglePanel;
   $('npanel').addEventListener('click', onPanelClick);
