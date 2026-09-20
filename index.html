@@ -13,7 +13,7 @@
   --ink:#12202b; --panel:#1a2b38; --panel2:#223646; --line:#2f4658;
   --text:#e8eef3; --muted:#93a8b8;
   --sea:#d3e2da; --deep:#5a8580;
-  --gold:#f2b83c; --danger:#e5645a; --ok:#59c38e;
+  --gold:#f2b83c; --danger:#e5645a; --ok:#59c38e;a
   --f-head:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
   --f-body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-piece:'Noto Sans Symbols 2','Segoe UI Symbol','Apple Symbols','DejaVu Sans','Arial Unicode MS',sans-serif;
@@ -889,11 +889,52 @@ function onGameListClick(e) {
 /* ═════════════ Starting games ═════════════ */
 function clearSel() { S.sel = null; S.targets = []; }
 
-const BOT_NAMES = ['Ada', 'Bishop', 'Castle', 'Fianchetto', 'Gambit', 'Knight', 'Pawn', 'Zugzwang', 'Rook', 'Tempo'];
+const BOT_NAMES = [
+  'ChessKnight','KnightMaster','RookRunner','QueenAttack','BishopBoss','PawnStorm','CheckMate','CheckM8','CastleKing','CastleRush',
+  'RookAttack','KnightRush','QueenSide','KingSide','EndgameKing','OpeningBook','TacticalMind','ChessWizard','ChessLegend','ChessPilot',
+  'ChessPro','ChessFan','ChessNerd','ChessPlayer','BoardMaster','BoardBoss','BoardBlitz','BlitzKing','BlitzKnight','RapidRook',
+  'RapidKing','RapidFire','BulletKing','BulletKnight','BulletRook','MateHunter','MateMaster','MateMachine','ForkMaster','ForkHunter',
+  'PinMaster','PinHunter','SkewerKing','TacticMaster','TacticKnight','PawnPush','PawnBreaker','PawnStormer','RookStorm','RookForce',
+  'RookKing','KnightForce','KnightStorm','KnightVision','BishopRush','BishopStorm','QueenRush','QueenStorm','QueenHunter','KingHunter',
+  'KingCrusher','CheckHunter','CheckMaster','CheckStorm','CastleMaster','CastlePro','EndgamePro','OpeningMaster','OpeningKnight','TacticalKing',
+  'TacticalRook','ChessBlitz','ChessRush','ChessStorm','ChessForge','ChessArena','ChessZone','ChessCore','ChessGrid','ChessCraft',
+  'ChessNova','ChessPulse','ChessVortex','ChessTitan','ChessFury','ChessFlame','ChessShadow','ChessGhost','ChessFox','ChessWolf',
+  'ChessDragon','ChessHawk','ChessEagle','ChessAce','ChessHero','ShadowPlayer','VoidWalker','DarkNova','NightFury','PixelKing',
+  'PixelRush','GameMaster','GameRunner','GameKnight','GameStorm','GameForge','GameZone','GamePulse','GameVortex','GameTitan',
+  'GameFury','GameGhost','GameWolf','GameDragon','GameHawk','GameEagle','CyberKnight','CyberWolf','CyberFox','CyberGhost',
+  'CyberNova','CyberStorm','CyberRush','CyberTitan','CyberAce','NeonKnight','NeonWolf','NeonFox','NeonGhost','NeonNova',
+  'NeonStorm','NeonRush','NeonTitan','NeonAce','PixelKnight','PixelWolf','PixelFox','PixelGhost','PixelNova','PixelStorm',
+  'PixelTitan','PixelAce','RetroKing','RetroKnight','RetroWolf','RetroFox','RetroGhost','RetroNova','RetroStorm','RetroRush',
+  'RetroAce','GameRider','GameHunter','GameCrusher','GameLegend','GamePilot','GameNinja','GameRogue','GameReaper','GameWizard',
+  'GameMage','GameDemon','GameAngel','GamePhantom','GameSpecter','GameBandit','GameRanger','GameSniper','GameCaptain','GameCommander',
+  'GameViper','GameCobra','GameFalcon','GameBlaze','GameInferno','GameComet','GameMeteor','GameOrbit','GameGalaxy','Aero',
+  'Axiom','Blaze','Bolt','Comet','Cosmo','Drift','Echo','Flux','Frost','Glitch','Havoc','Inferno','Jolt','Lunar','Maverick',
+  'Meteor','Nova','Orbit','Phantom','Pulse','Raven','Rogue','Shadow','Spark','Storm','Titan','Vapor','Vertex','Vortex','Wraith',
+  'Zenith','Zero','Zyro','Axel','Atlas','Archer','Blitz','Cairo','Cobalt','Crimson','Dash','Dynamo','Ember','Fable','Ghost',
+  'Griffin','Horizon','Hunter','Jasper','Jett','Knox','Legend','Lynx','Mako','Nexus','Onyx','Phoenix','Raptor','Reaper',
+  'Ryder','Saber','Scout','Shark','Sonic','Specter','Striker','Tempest','Thunder','Tracer','Turbo','Viper','Wolf','Xeno','Zane',
+  'Ace','Alpha','Bravo','Delta','Omega','Sigma','Vector','xKnight','xRook','xNova','xShadow','xBlaze','xStorm','xGhost','xVortex',
+  'KnightX','RookX','NovaX','ShadowX','BlazeX','StormX','GhostX','VortexX','DarkKnight','DarkRook','DarkNova','DarkWolf','DarkFox',
+  'DarkStorm','DarkViper','SilentKnight','SilentRook','SilentWolf','SilentFox','SilentStorm','SilentViper','RapidKnight','RapidFox',
+  'RapidWolf','RapidGhost','RapidNova','RapidStorm','LuckyKnight','LuckyRook','LuckyFox','LuckyWolf','LuckyNova','LuckyStorm',
+  'CrazyKnight','CrazyRook','CrazyFox','CrazyWolf','CrazyNova','CrazyStorm','MegaKnight','MegaRook','MegaFox','MegaWolf',
+  'MegaNova','MegaStorm','UltraKnight','UltraRook','UltraFox','UltraWolf','UltraNova','UltraStorm','Alex','Aiden','Aaron','Adam',
+  'Adrian','Avery','Austin','Blake','Brandon','Brayden','Brian','Caleb','Cameron','Carter','Casey','Charlie','Chase','Chris',
+  'Cody','Colin','Connor','Cooper','Corey','Cruz','Dylan','Eli','Elias','Elijah','Elliot','Ethan','Evan','Felix','Finn',
+  'Gavin','George','Grayson','Grant','Graham','Hayden','Hunter','Ian','Isaac','Jack','Jackson','Jacob','Jaden','Jake','James',
+  'Jared','Jason','Jayden','Jesse','Joel','John','Jonah','Jordan','Joseph','Joshua','Julian','Justin','Kai','Kaleb','Kane',
+  'Kayden','Kevin','Kingston','Kyle','Landon','Leo','Leon','Leonardo','Levi','Liam','Logan','Lucas','Luke','Mason','Mateo',
+  'Matthew','Max','Maxwell','Micah','Michael','Miles','Milo','Nate','Nathan','Nathaniel','Nico','Nolan','Noah','NolanX','Oliver',
+  'Owen','Parker','Patrick','Paul','Peter','Preston','Quinn','Rafael','Raymond','Reed','Reese','Riley','River','Robert','Roman',
+  'Rowan','Roy','Ryan','Samuel','Sawyer','Sean','Sebastian','Seth','Shane','Simon','Spencer','Stanley','Stephen','Steven','Theo',
+  'Theodore','Thomas','Toby','Travis','Trevor','Tristan','Tyler','Victor','Vincent','Wade','Walker','Warren','Wesley','Weston',
+  'William','Wyatt','Xavier','Zachary','Zane','AcePlayer','BlueJay','RedFox','GreenWolf','SilverFox','GoldenHawk'
+];
+const UNIQUE_BOT_NAMES = [...new Set(BOT_NAMES)].slice(0, 400);
 function startAI(level, pref, tc, botElo) {
   teardownOnline();
   S.mode = 'ai'; S.aiLevel = level; S.colorPref = pref; S.tc = tc || 0;
-  S.botElo = botElo || 0; S.botName = botElo ? 'Bot ' + pick(BOT_NAMES) : '';
+  S.botElo = botElo || 0; S.botName = botElo ? pick(UNIQUE_BOT_NAMES) : '';
   S.color = pref === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : pref;
   S.flip = S.color === 'b';
   S.game = new Chess(); S.over = null; S.last = null; S.aiThinking = false;
@@ -1372,8 +1413,6 @@ async function onPanelClick(e) {
 const MM_BASE = 100, MM_STEP = 10, MM_MAX = 500;
 const mmRange = sec => Math.min(MM_MAX, MM_BASE + MM_STEP * sec);
 
-const MM_BOT_AFTER = 25;   // seconds of searching before you are offered a bot near your rating
-
 function startMatchmaking(tc) {
   if (S.mm || !S.user) return;
   const mm = S.mm = {tc, t0: Date.now(), poll: null, paint: null, busy: false, inflight: null, matched: null};
@@ -1386,9 +1425,8 @@ function startMatchmaking(tc) {
     if (!el) return;
     const sec = Math.floor((Date.now() - mm.t0) / 1000), r = S.profile ? S.profile.rating : 1200, w = mmRange(sec);
     el.innerHTML = `${esc(tcLabel(tc))}<br>Looking for players rated ${Math.max(0, r - w)} to ${r + w}. Searching for ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}.`;
-    const left = MM_BOT_AFTER - sec;
-    sub.textContent = left > 0 ? `Nobody yet? In ${left}s you will play a bot rated near you. Stay on this page.` : 'Starting a game against a bot…';
-    if (left <= 0) fallbackToBot();
+    sub.textContent = 'Searching for a real player… You can choose a bot at any time.';
+
   };
   paint();
   mm.paint = setInterval(paint, 1000);
