@@ -499,6 +499,32 @@ function pickAIMove(g, level) {
   }
   return best;
 }
+
+// A bot with a target rating. Weaker bots search shallower and pick among decent moves more loosely
+// (softmax over the search scores); stronger bots almost always play their best line.
+// The rating is a rough guide, not a measured strength.
+function pickBotMove(g, elo) {
+  const moves = g.moves({verbose: true});
+  if (!moves.length) return null;
+  if (elo >= 900 && g.history().length < 2) {
+    const book = ['e4','d4','c4','Nf3','e5','c5','e6','c6','d5','Nf6'];
+    const opts = moves.filter(m => book.includes(m.san));
+    if (opts.length) return pick(opts);
+  }
+  const depth = elo < 1000 ? 1 : elo < 1400 ? 2 : 3;
+  const T = Math.max(5, Math.min(260, (1750 - elo) * 0.35));   // centipawns of "looseness"
+  const scored = moves.map(m => {
+    g.move({from: m.from, to: m.to, promotion: m.promotion});
+    const sc = -negamax(g, depth - 1, -Infinity, Infinity);
+    g.undo();
+    return {m, sc};
+  });
+  const best = Math.max(...scored.map(x => x.sc));
+  const w = scored.map(x => Math.exp(Math.max(-50, (x.sc - best) / T)));
+  let r = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return scored[i].m; }
+  return scored[0].m;
+}
 // </ai>
 
 function gameEnd(g) {
@@ -534,7 +560,8 @@ const S = {
   tc: 0, clock: null,    // time control (seconds) and clocks for computer / pass-and-play games
   sfxPly: -1, endPlayed: null, lowSec: 0, unread: 0,
   notes: [], pending: {friends: [], challenges: []}, notesTimer: null,   // notification centre
-  mm: null                                                                 // quick-match search in progress
+  mm: null,                                                                // quick-match search in progress
+  botElo: 0, botName: ''                                                   // set when playing a quick-match bot
 };
 const PC = {}; // profile cache
 
@@ -862,9 +889,11 @@ function onGameListClick(e) {
 /* ═════════════ Starting games ═════════════ */
 function clearSel() { S.sel = null; S.targets = []; }
 
-function startAI(level, pref, tc) {
+const BOT_NAMES = ['Ada', 'Bishop', 'Castle', 'Fianchetto', 'Gambit', 'Knight', 'Pawn', 'Zugzwang', 'Rook', 'Tempo'];
+function startAI(level, pref, tc, botElo) {
   teardownOnline();
   S.mode = 'ai'; S.aiLevel = level; S.colorPref = pref; S.tc = tc || 0;
+  S.botElo = botElo || 0; S.botName = botElo ? 'Bot ' + pick(BOT_NAMES) : '';
   S.color = pref === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : pref;
   S.flip = S.color === 'b';
   S.game = new Chess(); S.over = null; S.last = null; S.aiThinking = false;
@@ -1343,17 +1372,23 @@ async function onPanelClick(e) {
 const MM_BASE = 100, MM_STEP = 10, MM_MAX = 500;
 const mmRange = sec => Math.min(MM_MAX, MM_BASE + MM_STEP * sec);
 
+const MM_BOT_AFTER = 25;   // seconds of searching before you are offered a bot near your rating
+
 function startMatchmaking(tc) {
   if (S.mm || !S.user) return;
-  const mm = S.mm = {tc, t0: Date.now(), poll: null, paint: null, busy: false};
-  modal('Finding a match', '<p id="mm-text" class="muted"></p><p class="muted small">Stay on this page. You will be taken to the game as soon as someone near your rating is found.</p>', [
+  const mm = S.mm = {tc, t0: Date.now(), poll: null, paint: null, busy: false, inflight: null, matched: null};
+  modal('Finding a match', '<p id="mm-text" class="muted"></p><p class="muted small" id="mm-sub"></p>', [
+    {label: 'Play a bot now', cls: 'primary', onClick: () => { fallbackToBot(); return false; }},
     {label: 'Cancel search', cls: 'ghost', onClick: () => { cancelMatchmaking(); return false; }}
   ]);
   const paint = () => {
-    const el = $('mm-text');
+    const el = $('mm-text'), sub = $('mm-sub');
     if (!el) return;
     const sec = Math.floor((Date.now() - mm.t0) / 1000), r = S.profile ? S.profile.rating : 1200, w = mmRange(sec);
     el.innerHTML = `${esc(tcLabel(tc))}<br>Looking for players rated ${Math.max(0, r - w)} to ${r + w}. Searching for ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}.`;
+    const left = MM_BOT_AFTER - sec;
+    sub.textContent = left > 0 ? `Nobody yet? In ${left}s you will play a bot rated near you. Stay on this page.` : 'Starting a game against a bot…';
+    if (left <= 0) fallbackToBot();
   };
   paint();
   mm.paint = setInterval(paint, 1000);
@@ -1369,19 +1404,38 @@ async function mmPoll() {
   const mm = S.mm;
   if (!mm || mm.busy) return;
   mm.busy = true;
-  const {data, error} = await sb.rpc('find_match', {tc: mm.tc});
+  mm.inflight = Promise.resolve(sb.rpc('find_match', {tc: mm.tc}));
+  const {data, error} = await mm.inflight;
   mm.busy = false;
-  if (S.mm !== mm) return;                     // cancelled while waiting
-  if (error) { stopMatchmaking(); closeModal(); return toast(dbMsg(error), true); }
-  if (data) { stopMatchmaking(); closeModal(); openMatch(data); }
+  if (data) { mm.matched = data; stopMatchmaking(); closeModal(); return openMatch(data); }   // matched, even if you just clicked away
+  if (S.mm !== mm) return;
+  if (error) { stopMatchmaking(); closeModal(); toast(dbMsg(error), true); }
 }
 async function cancelMatchmaking() {
-  if (!S.mm) return;
+  const mm = S.mm;
+  if (!mm) return;
   stopMatchmaking();
+  if (mm.inflight) await mm.inflight;
+  if (mm.matched) return;                      // the poll that was in flight found a game; it opens it
   const {data} = await sb.rpc('cancel_match');
   closeModal();
   if (data) openMatch(data);                   // someone matched you a moment before you cancelled
   else toast('Search cancelled.');
+}
+// No players found (or you asked for one): play a bot rated close to you. It is an unrated practice game.
+async function fallbackToBot() {
+  const mm = S.mm;
+  if (!mm) return;
+  stopMatchmaking();
+  if (mm.inflight) await mm.inflight;
+  if (mm.matched) return;
+  const {data} = await sb.rpc('cancel_match');
+  closeModal();
+  if (data) return openMatch(data);
+  const r = S.profile ? S.profile.rating : 1200;
+  const elo = Math.max(400, Math.round(r + (Math.random() + Math.random() - 1) * 150));   // clustered around your rating, within 150
+  startAI(0, 'r', mm.tc, elo);
+  toast(`No players found, so you are playing ${S.botName} (about ${elo}). This game is unrated.`);
 }
 async function openMatch(gid) {
   const {data} = await sb.from('games').select('*').eq('id', gid).maybeSingle();
@@ -1536,7 +1590,7 @@ function aiMove() {
   setTimeout(() => {
     if (S.game !== g || S.mode !== 'ai') return;
     if (S.over) { S.aiThinking = false; render(); return; }
-    const m = pickAIMove(g, S.aiLevel);
+    const m = S.botElo ? pickBotMove(g, S.botElo) : pickAIMove(g, S.aiLevel);
     S.aiThinking = false;
     if (m) {
       const mv = g.move({from: m.from, to: m.to, promotion: m.promotion || 'q'});
@@ -1558,7 +1612,7 @@ function undo() {
 }
 
 function newGame() {
-  if (S.mode === 'ai') startAI(S.aiLevel, S.colorPref, S.tc);
+  if (S.mode === 'ai') startAI(S.aiLevel, S.colorPref, S.tc, S.botElo);
   else startLocal(S.tc);
 }
 
@@ -1648,6 +1702,7 @@ function playerInfo(color) {
   if (S.mode === 'local') return {name: color === 'w' ? 'White' : 'Black'};
   if (S.mode === 'ai') {
     if (color === S.color) return {name: S.profile ? S.profile.username : 'You'};
+    if (S.botElo) return {name: S.botName, sub: String(S.botElo)};
     return {name: 'Computer', sub: ['', 'Easy', 'Medium', 'Hard'][S.aiLevel]};
   }
   const row = S.online.row, id = color === 'w' ? row.white_id : row.black_id;
@@ -1721,8 +1776,9 @@ function renderSide(vg) {
   } else inv.classList.add('hidden');
 
   const note = $('note');
-  note.classList.toggle('hidden', !(S.mode === 'online' && S.over));
-  note.textContent = 'Online games are deleted from the server once they finish. Use Overview to review this one before you leave.';
+  const botGame = S.mode === 'ai' && S.botElo > 0, onlineDone = S.mode === 'online' && S.over;
+  note.classList.toggle('hidden', !(botGame || onlineDone));
+  note.textContent = onlineDone ? 'Online games are deleted from the server once they finish. Use Overview to review this one before you leave.' : 'Unrated practice game against a bot.';
 
   const dp = ply => S.review ? ` data-ply="${ply}"${S.review.ply === ply ? ' class="cur"' : ''}` : '';
   let mv = '';
