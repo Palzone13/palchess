@@ -13,7 +13,7 @@
   --ink:#12202b; --panel:#1a2b38; --panel2:#223646; --line:#2f4658;
   --text:#e8eef3; --muted:#93a8b8;
   --sea:#d3e2da; --deep:#5a8580;
-  --gold:#f2b83c; --danger:#e5645a; --ok:#59c38e;a
+  --gold:#f2b83c; --danger:#e5645a; --ok:#59c38e;
   --f-head:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
   --f-body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-piece:'Noto Sans Symbols 2','Segoe UI Symbol','Apple Symbols','DejaVu Sans','Arial Unicode MS',sans-serif;
@@ -503,7 +503,8 @@ function pickAIMove(g, level) {
 // A bot with a target rating. Weaker bots search shallower and pick among decent moves more loosely
 // (softmax over the search scores); stronger bots almost always play their best line.
 // The rating is a rough guide, not a measured strength.
-function pickBotMove(g, elo) {
+function pickBotMove(g, elo, maxDepth, budgetMs) {
+  const t0 = Date.now();
   const moves = g.moves({verbose: true});
   if (!moves.length) return null;
   if (elo >= 900 && g.history().length < 2) {
@@ -511,15 +512,23 @@ function pickBotMove(g, elo) {
     const opts = moves.filter(m => book.includes(m.san));
     if (opts.length) return pick(opts);
   }
-  const depth = elo < 1000 ? 1 : elo < 1400 ? 2 : 3;
+  const depth = Math.min(maxDepth || 3, elo < 1000 ? 1 : elo < 1400 ? 2 : 3);
   const T = Math.max(5, Math.min(260, (1750 - elo) * 0.35));   // centipawns of "looseness"
-  const scored = moves.map(m => {
+  const margin = Math.max(60, 4 * T);                           // moves worse than best by more than this are as good as ruled out
+  orderMoves(moves);
+  let best = -Infinity;
+  const scored = [];
+  for (const m of moves) {
+    // out of thinking time: the moves not looked at yet (least promising, since they are sorted last) count as bad
+    if (budgetMs && scored.length >= 4 && Date.now() - t0 > budgetMs) { scored.push({m, sc: best - margin - 1}); continue; }
     g.move({from: m.from, to: m.to, promotion: m.promotion});
-    const sc = -negamax(g, depth - 1, -Infinity, Infinity);
+    // narrow window: anything scoring below (best - margin) only needs to be known as "bad"
+    const floor = best === -Infinity ? -Infinity : best - margin;
+    const sc = -negamax(g, depth - 1, -Infinity, -floor);
     g.undo();
-    return {m, sc};
-  });
-  const best = Math.max(...scored.map(x => x.sc));
+    if (sc > best) best = sc;
+    scored.push({m, sc});
+  }
   const w = scored.map(x => Math.exp(Math.max(-50, (x.sc - best) / T)));
   let r = Math.random() * w.reduce((a, b) => a + b, 0);
   for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return scored[i].m; }
@@ -1622,15 +1631,21 @@ function commit(from, to, promo) {
   else if (S.mode === 'ai' && !end) aiMove();
 }
 
+// How long a quick-match bot "thinks" before it moves, by time control: [min, max] seconds.
+// Bullet 0.2-1s, Blitz 1-2s, everything else (Original, Long, untimed) 2-4s.
+function botThinkMs() {
+  const [lo, hi] = S.tc === 60 ? [0.2, 1] : S.tc === 180 ? [1, 2] : [2, 4];
+  return (lo + Math.random() * (hi - lo)) * 1000;
+}
+
 function aiMove() {
-  const g = S.game;
+  const g = S.game, bot = S.botElo > 0, t0 = Date.now();
+  const wait = bot ? botThinkMs() : 250;
   S.aiThinking = true; render();
-  setTimeout(() => {
+  const play = m => {
     if (S.game !== g || S.mode !== 'ai') return;
-    if (S.over) { S.aiThinking = false; render(); return; }
-    const m = S.botElo ? pickBotMove(g, S.botElo) : pickAIMove(g, S.aiLevel);
     S.aiThinking = false;
-    if (m) {
+    if (m && !S.over) {
       const mv = g.move({from: m.from, to: m.to, promotion: m.promotion || 'q'});
       S.last = {from: m.from, to: m.to};
       const end = gameEnd(g);
@@ -1638,7 +1653,13 @@ function aiMove() {
       clockAfterMove(mv.color);
     }
     render();
-  }, 250);
+  };
+  setTimeout(() => {                                   // a beat first, so the "thinking" state paints
+    if (S.game !== g || S.mode !== 'ai' || S.over) return play(null);
+    const m = bot ? pickBotMove(g, S.botElo, S.tc === 60 ? 2 : 3, Math.max(120, wait - 100)) : pickAIMove(g, S.aiLevel);
+    // the search itself counts towards the think time; only wait for whatever is left
+    setTimeout(() => play(m), Math.max(0, wait - (Date.now() - t0)));
+  }, 50);
 }
 
 function undo() {
