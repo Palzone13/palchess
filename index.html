@@ -1486,7 +1486,8 @@ const mmRange = sec => Math.min(MM_MAX, MM_BASE + MM_STEP * sec);
 
 function startMatchmaking(tc) {
   if (S.mm || !S.user) return;
-  const mm = S.mm = {tc, t0: Date.now(), poll: null, paint: null, busy: false, inflight: null, matched: null};
+  // nobody found after 5 to 7 seconds (picked at random for each search) -> play a bot near your rating
+  const mm = S.mm = {tc, t0: Date.now(), poll: null, paint: null, botT: null, botAfter: 5 + Math.random() * 2, busy: false, inflight: null, matched: null};
   modal('Finding a match', '<p id="mm-text" class="muted"></p><p class="muted small" id="mm-sub"></p>', [
     {label: 'Play a bot now', cls: 'primary', onClick: () => { fallbackToBot(); return false; }},
     {label: 'Cancel search', cls: 'ghost', onClick: () => { cancelMatchmaking(); return false; }}
@@ -1496,17 +1497,18 @@ function startMatchmaking(tc) {
     if (!el) return;
     const sec = Math.floor((Date.now() - mm.t0) / 1000), r = S.profile ? ratingOf(S.profile, tc) : 100, w = mmRange(sec);
     el.innerHTML = `${esc(tcLabel(tc))}<br>Looking for players rated ${Math.max(0, r - w)} to ${r + w}. Searching for ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}.`;
-    sub.textContent = 'Searching for a real player… You can choose a bot at any time.';
-
+    const left = Math.max(1, Math.ceil(mm.botAfter - (Date.now() - mm.t0) / 1000));
+    sub.textContent = `Nobody yet? In ${left}s you will play a bot rated near you. Or choose one now.`;
   };
   paint();
   mm.paint = setInterval(paint, 1000);
-  mm.poll = setInterval(mmPoll, 3000);
+  mm.poll = setInterval(mmPoll, 2000);            // check often: the search is short
+  mm.botT = setTimeout(fallbackToBot, mm.botAfter * 1000);
   mmPoll();
 }
 function stopMatchmaking() {
   if (!S.mm) return;
-  clearInterval(S.mm.poll); clearInterval(S.mm.paint);
+  clearInterval(S.mm.poll); clearInterval(S.mm.paint); clearTimeout(S.mm.botT);
   S.mm = null;
 }
 async function mmPoll() {
