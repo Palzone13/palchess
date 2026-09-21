@@ -199,6 +199,28 @@ label input{margin-top:6px}
 .rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
 .codein{flex:1;min-width:120px;width:auto}
 
+/* lobby: Single / Multi / 4 Player dropdowns */
+.accs{display:flex;flex-direction:column;gap:12px}
+.acc{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:border-color .15s}
+.acc.open{border-color:var(--gold)}
+.acc-h{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:none;border:0;color:var(--text);cursor:pointer;text-align:left;font:inherit}
+.acc-h:hover{background:var(--panel2)}
+.acc-t{display:flex;flex-direction:column;gap:2px}
+.acc-t b{font:800 21px var(--f-head);letter-spacing:-.01em}
+.acc-t small{color:var(--muted);font-size:13px;font-weight:500}
+.chev{width:10px;height:10px;flex:none;margin:0 4px 4px 0;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+.acc.open .chev{transform:rotate(225deg);margin-bottom:-2px}
+.acc-b{padding:6px 18px 20px;border-top:1px solid var(--line)}
+.acc-b[hidden]{display:none}
+.acc-b .block{border-top:0;padding:14px 0 0}
+.acc-b .block + .block{border-top:1px solid var(--line);margin-top:20px}
+.acc-b .block > h3:first-child{font-size:16px}
+.ctl{margin-top:16px}
+.lbl{display:block;font-size:14px;font-weight:600;color:var(--muted);margin:0 0 8px}
+.lbl b{margin:0 8px 0 6px;font:800 20px var(--f-head);color:var(--gold)}
+input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);height:28px;cursor:pointer}
+.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+
 /* notification center */
 .bell{position:relative}
 .bell .badge{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--gold);color:#241a05;font:800 11px/18px var(--f-body);text-align:center}
@@ -301,27 +323,53 @@ label input{margin-top:6px}
   <section id="view-lobby" class="lobby hidden">
     <div class="lobby-grid">
       <div>
-        <h2>Start a game</h2>
-        <div class="block">
-          <h3>Play the computer</h3>
-          <div class="row">
-            <div class="seg" id="seg-level" data-val="2" aria-label="Difficulty">
-              <button type="button" data-v="1">Easy</button><button type="button" data-v="2" class="on">Medium</button><button type="button" data-v="3">Hard</button>
-            </div>
-            <div class="seg" id="seg-color" data-val="w" aria-label="Your color">
-              <button type="button" data-v="w" class="on">White</button><button type="button" data-v="b">Black</button><button type="button" data-v="r">Random</button>
+        <h2>Play</h2>
+        <div class="accs">
+          <div class="acc" id="acc-single">
+            <button class="acc-h" type="button" aria-expanded="false" aria-controls="accb-single">
+              <span class="acc-t"><b>Single</b><small>Play the computer at any level</small></span><span class="chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc-b" id="accb-single" hidden>
+              <div class="ctl">
+                <label class="lbl" for="elo-slider">Computer rating <b id="elo-val">400</b><span id="elo-name" class="muted"></span></label>
+                <input type="range" id="elo-slider" min="100" max="1000" step="25" value="400">
+                <div class="scale"><span>100 Beginner</span><span>1000 Expert</span></div>
+              </div>
+              <div class="ctl">
+                <span class="lbl">Your colour</span>
+                <div class="seg" id="seg-color" data-val="w" aria-label="Your color">
+                  <button type="button" data-v="w" class="on">White</button><button type="button" data-v="b">Black</button><button type="button" data-v="r">Random</button>
+                </div>
+              </div>
+              <div class="ctl"><span class="lbl">Time</span><div id="tc-ai"></div></div>
+              <div class="ctl"><button class="btn primary" id="start-ai" type="button">Start game</button></div>
+              <p class="muted small" style="margin:12px 0 0">Practice game, not rated. Slide the rating to make the computer easier or harder.</p>
             </div>
           </div>
-          <div class="row" id="tc-ai"></div>
-          <button class="btn primary" id="start-ai" type="button">Start game</button>
+
+          <div class="acc" id="acc-multi">
+            <button class="acc-h" type="button" aria-expanded="false" aria-controls="accb-multi">
+              <span class="acc-t"><b>Multi</b><small>Online with a rating, or two players on one screen</small></span><span class="chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc-b" id="accb-multi" hidden>
+              <div class="block" id="online-block"></div>
+              <div class="block">
+                <h3>Two players, one screen</h3>
+                <div class="row" id="tc-local"></div>
+                <button class="btn" id="start-local" type="button">Pass and play</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="acc" id="acc-four">
+            <button class="acc-h" type="button" aria-expanded="false" aria-controls="accb-four">
+              <span class="acc-t"><b>4 Player</b><small>Four colours, one board, last one standing wins</small></span><span class="chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc-b" id="accb-four" hidden>
+              <div class="block" id="p4-block"></div>
+            </div>
+          </div>
         </div>
-        <div class="block">
-          <h3>Two players, one screen</h3>
-          <div class="row" id="tc-local"></div>
-          <button class="btn" id="start-local" type="button">Pass and play</button>
-        </div>
-        <div class="block" id="p4-block"></div>
-        <div class="block" id="online-block"></div>
       </div>
       <div>
         <div id="me-card"></div>
@@ -624,7 +672,7 @@ const S = {
   sfxPly: -1, endPlayed: null, lowSec: 0, unread: 0,
   notes: [], pending: {friends: [], challenges: []}, notesTimer: null,   // notification centre
   mm: null,                                                                // quick-match search in progress
-  botElo: 0, botShown: 0, botName: '', botMatchId: null, botResultSettled: false,                                                   // set when playing a quick-match bot
+  botElo: 0, botShown: 0, botName: '', botMatchId: null, botResultSettled: false, botLabel: '',                                                   // set when playing a quick-match bot
   adminOpen: false, adminSuggestion: null
 };
 const PC = {}; // profile cache
@@ -1077,10 +1125,10 @@ const BOT_NAMES = [
   'William','Wyatt','Xavier','Zachary','Zane','AcePlayer','BlueJay','RedFox','GreenWolf','SilverFox','GoldenHawk'
 ];
 const UNIQUE_BOT_NAMES = [...new Set(BOT_NAMES)].slice(0, 400);
-function startAI(level, pref, tc, botElo, botShown, botMatchId = null) {
+function startAI(level, pref, tc, botElo, botShown, botMatchId = null, botLabel = '') {
   teardownOnline();
   S.mode = 'ai'; S.aiLevel = level; S.colorPref = pref; S.tc = tc || 0;
-  S.botElo = botElo || 0; S.botShown = botElo ? (botShown != null ? botShown : botElo) : 0; S.botName = botElo ? pick(UNIQUE_BOT_NAMES) : ''; S.botMatchId = botMatchId; S.botResultSettled = false;
+  S.botElo = botElo || 0; S.botShown = botElo ? (botShown != null ? botShown : botElo) : 0; S.botLabel = botLabel; S.botName = botElo ? (botLabel || pick(UNIQUE_BOT_NAMES)) : ''; S.botMatchId = botMatchId; S.botResultSettled = false;
   S.color = pref === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : pref;
   S.flip = S.color === 'b';
   S.game = new Chess(); S.over = null; S.last = null; S.aiThinking = false;
@@ -2387,6 +2435,16 @@ async function replaceWithBot4(seat) {
 }
 
 /* ═════════════ 4-player chess: lobby ═════════════ */
+// only one of Single / Multi / 4 Player is open at a time
+function toggleAcc(id) {
+  document.querySelectorAll('.acc').forEach(a => {
+    const h = a.querySelector('.acc-h'), open = a.id === id && h.getAttribute('aria-expanded') !== 'true';
+    h.setAttribute('aria-expanded', String(open));
+    a.querySelector('.acc-b').hidden = !open;
+    a.classList.toggle('open', open);
+  });
+}
+
 function renderP4Block() {
   const b = $('p4-block'), acct = !!(S.user && !isGuest());
   b.innerHTML = `<h3>4-player chess</h3>
@@ -2607,7 +2665,7 @@ function undo() {
 }
 
 function newGame() {
-  if (S.mode === 'ai') startAI(S.aiLevel, S.colorPref, S.tc, S.botElo, S.botShown);
+  if (S.mode === 'ai') startAI(S.aiLevel, S.colorPref, S.tc, S.botElo, S.botShown, null, S.botLabel);
   else startLocal(S.tc);
 }
 
@@ -3141,12 +3199,17 @@ function bindStatic() {
   $('auth-form').addEventListener('submit', submitAuth);
   $('guest').onclick = () => { S.guest = true; renderUserBox(); goLobby(); };
   $('brand').onclick = () => { if (S.mode) leaveGame(); else if (S.user || S.guest) goLobby(); };
-  ['seg-level', 'seg-color', 'seg-lb'].forEach(id => initSeg($(id)));
+  ['seg-color', 'seg-lb'].forEach(id => initSeg($(id)));
   $('seg-lb').addEventListener('click', () => { S.lbCol = $('seg-lb').dataset.val; loadLobbyData(); });
   $('tc-ai').innerHTML = tcSeg('seg-ai-tc', 0);
   $('tc-local').innerHTML = tcSeg('seg-local-tc', 0);
   initSeg($('seg-ai-tc')); initSeg($('seg-local-tc'));
-  $('start-ai').onclick = () => startAI(+$('seg-level').dataset.val, $('seg-color').dataset.val, +$('seg-ai-tc').dataset.val);
+  // Single: the computer's rating is a slider; it plays at that rating (on the engine's own scale)
+  const eloName = e => e < 250 ? 'Beginner' : e < 450 ? 'Casual' : e < 650 ? 'Club player' : e < 850 ? 'Strong' : 'Expert';
+  const paintElo = () => { const e = +$('elo-slider').value; $('elo-val').textContent = e; $('elo-name').textContent = eloName(e); };
+  $('elo-slider').addEventListener('input', paintElo); paintElo();
+  $('start-ai').onclick = () => { const e = +$('elo-slider').value; startAI(0, $('seg-color').dataset.val, +$('seg-ai-tc').dataset.val, e + BOT_SCALE, e, null, 'Computer'); };
+  document.querySelectorAll('.acc-h').forEach(b => { b.onclick = () => toggleAcc(b.closest('.acc').id); });
   $('start-local').onclick = () => startLocal(+$('seg-local-tc').dataset.val);
   setInterval(tick, 100);
   $('moves').addEventListener('click', e => {
