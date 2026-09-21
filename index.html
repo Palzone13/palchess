@@ -199,6 +199,17 @@ label input{margin-top:6px}
 .rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
 .codein{flex:1;min-width:120px;width:auto}
 
+/* chess titles next to names */
+.ttl{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font:700 11px/1.5 var(--f-body);letter-spacing:.02em;white-space:nowrap;vertical-align:middle;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-style:normal}
+.ttl.t-sgm{background:var(--gold);border-color:var(--gold);color:#241a05}
+.ttl.t-gm{border-color:var(--gold);color:var(--gold)}
+.ttl.t-im{border-color:#b9a3ff;color:#c9b8ff}
+.ttl.t-fm{border-color:#62b5ff;color:#8ccaff}
+.ttl.t-cm{border-color:#59c38e;color:#7fd8a9}
+.ttl.t-ex{border-color:#8fd1c2;color:#a9e0d3}
+.ttl.t-ca,.ttl.t-cb{border-color:#b7d98b;color:#c6e2a3}
+.pbar .pname .ttl{font-size:10px}
+
 /* lobby: Single / Multi / 4 Player dropdowns */
 .accs{display:flex;flex-direction:column;gap:12px}
 .acc{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:border-color .15s}
@@ -332,8 +343,8 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
             <div class="acc-b" id="accb-single" hidden>
               <div class="ctl">
                 <label class="lbl" for="elo-slider">Computer rating <b id="elo-val">400</b><span id="elo-name" class="muted"></span></label>
-                <input type="range" id="elo-slider" min="100" max="1000" step="25" value="400">
-                <div class="scale"><span>100 Beginner</span><span>1000 Expert</span></div>
+                <input type="range" id="elo-slider" min="100" max="3200" step="50" value="400">
+                <div class="scale"><span>100 Novice</span><span>3200 Super Grandmaster</span></div>
               </div>
               <div class="ctl">
                 <span class="lbl">Your colour</span>
@@ -860,7 +871,7 @@ function renderUserBox() {
     box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span><span class="tag">Guest</span><button class="btn ghost sm" id="btn-out" type="button">Leave</button>`;
     $('btn-out').onclick = signOut;
   } else if (S.profile) {
-    box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span><span class="rate" title="Your Standard rating">${S.profile.rating}</span><button class="btn ghost sm" id="btn-pw" type="button">Password</button><button class="btn ghost sm" id="btn-out" type="button">Sign out</button>`;
+    box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span>${titleBadge(bestRating(S.profile))}<span class="rate" title="Your Standard rating">${S.profile.rating}</span><button class="btn ghost sm" id="btn-pw" type="button">Password</button><button class="btn ghost sm" id="btn-out" type="button">Sign out</button>`;
     $('btn-out').onclick = signOut;
     $('btn-pw').onclick = changePassword;
   } else if (S.guest) {
@@ -968,7 +979,7 @@ function renderLobby() {
 function renderMeCard() {
   const p = S.profile;
   if (p && p.is_guest) { $('me-card').innerHTML = '<div class="me"><div><div class="me-name">Playing as a guest</div><div class="muted">Guests can join games but not host them. Their games are unrated. Create an account to host, add friends and get a rating.</div></div></div>'; return; }
-  $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div><div class="muted small">2-player: Standard ${p.rating}, Bullet ${p.rating_bullet}, Blitz ${p.rating_blitz}</div><div class="muted small">4-player: Bullet ${p.rating4_bullet}, Blitz ${p.rating4_blitz}, Standard ${p.rating4_std}</div></div></div>` : '';
+  $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}${titleBadge(bestRating(p), true)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div><div class="muted small">2-player: Standard ${p.rating}, Bullet ${p.rating_bullet}, Blitz ${p.rating_blitz}</div><div class="muted small">4-player: Bullet ${p.rating4_bullet}, Blitz ${p.rating4_blitz}, Standard ${p.rating4_std}</div></div></div>` : '';
 }
 
 async function loadLobbyData() {
@@ -1002,7 +1013,7 @@ function renderLeaders(rows, col) {
   col = col || 'rating';
   const ol = $('leaders');
   if (!rows.length) { ol.innerHTML = '<li class="muted" style="display:block">No players yet. Create an account and be the first.</li>'; return; }
-  ol.innerHTML = rows.map((p, i) => `<li class="${S.user && p.id === S.user.id ? 'me-row' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(p.username)}</span><span class="rt">${p[col]}</span><span class="wl">${col.indexOf('rating4') < 0 ? p.wins + '-' + p.losses + '-' + p.draws : ''}</span></li>`).join('');
+  ol.innerHTML = rows.map((p, i) => `<li class="${S.user && p.id === S.user.id ? 'me-row' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(p.username)}${titleBadge(p[col])}</span><span class="rt">${p[col]}</span><span class="wl">${col.indexOf('rating4') < 0 ? p.wins + '-' + p.losses + '-' + p.draws : ''}</span></li>`).join('');
 }
 
 function nameOf(id) { const p = PC[id]; return p ? p.username : 'Player'; }
@@ -1012,13 +1023,13 @@ function renderGameLists(open, mine, chal) {
   $('chal-h').classList.toggle('hidden', !chal.length);
   $('chal-games').innerHTML = chal.map(g => {
     const p = PC[g.creator_id], youPlay = g.white_id ? 'Black' : 'White';
-    return `<li><span class="who"><b>${esc(nameOf(g.creator_id))}</b>${p ? ' (' + ratingOf(p, g.time_control) + ')' : ''}<span class="sub">You play ${youPlay}, ${esc(tcLabel(g.time_control))}</span></span><button class="btn sm primary" data-act="join" data-id="${g.id}" type="button">Accept</button><button class="btn sm ghost" data-act="cancel" data-id="${g.id}" type="button">Decline</button></li>`;
+    return `<li><span class="who"><b>${esc(nameOf(g.creator_id))}</b>${p ? titleBadge(ratingOf(p, g.time_control)) + ' (' + ratingOf(p, g.time_control) + ')' : ''}<span class="sub">You play ${youPlay}, ${esc(tcLabel(g.time_control))}</span></span><button class="btn sm primary" data-act="join" data-id="${g.id}" type="button">Accept</button><button class="btn sm ghost" data-act="cancel" data-id="${g.id}" type="button">Decline</button></li>`;
   }).join('');
 
   $('open-games').innerHTML = open.length ? open.map(g => {
     const p = PC[g.creator_id];
     const youPlay = g.white_id ? 'Black' : 'White';
-    return `<li><span class="who"><b>${esc(nameOf(g.creator_id))}</b>${p ? ' (' + ratingOf(p, g.time_control) + ')' : ''}<span class="sub">You would play ${youPlay}, ${esc(tcLabel(g.time_control))}</span></span><button class="btn sm primary" data-act="join" data-id="${g.id}" type="button">Join</button></li>`;
+    return `<li><span class="who"><b>${esc(nameOf(g.creator_id))}</b>${p ? titleBadge(ratingOf(p, g.time_control)) + ' (' + ratingOf(p, g.time_control) + ')' : ''}<span class="sub">You would play ${youPlay}, ${esc(tcLabel(g.time_control))}</span></span><button class="btn sm primary" data-act="join" data-id="${g.id}" type="button">Join</button></li>`;
   }).join('') : '<li class="muted">No open games right now. Create one and share the code.</li>';
 
   $('my-games').innerHTML = mine.length ? mine.map(g => {
@@ -1044,7 +1055,7 @@ function renderFriends(rows) {
     outgoing.map(r => `<li><span class="who"><b>${esc(nameOf(r.addressee_id))}</b><span class="sub">request sent</span></span><button class="btn sm ghost" data-act="f-remove" data-id="${r.id}" type="button">Cancel</button></li>`).join('');
   $('friend-list').innerHTML = friends.length ? friends.map(r => {
     const id = other(r), p = PC[id];
-    return `<li><span class="who"><b>${esc(nameOf(id))}</b>${p ? ' (' + p.rating + ')' : ''}</span><button class="btn sm" data-act="f-challenge" data-uid="${id}" type="button">Challenge</button><button class="btn sm ghost" data-act="f-remove" data-id="${r.id}" type="button" aria-label="Remove ${esc(nameOf(id))} from friends">Remove</button></li>`;
+    return `<li><span class="who"><b>${esc(nameOf(id))}</b>${p && !p.is_guest ? titleBadge(bestRating(p)) + ' (' + p.rating + ')' : ''}</span><button class="btn sm" data-act="f-challenge" data-uid="${id}" type="button">Challenge</button><button class="btn sm ghost" data-act="f-remove" data-id="${r.id}" type="button" aria-label="Remove ${esc(nameOf(id))} from friends">Remove</button></li>`;
   }).join('') : '<li class="muted">No friends yet. Add someone by username.</li>';
 }
 
@@ -2140,6 +2151,28 @@ const RATING2 = {60: ['rating_bullet', 'Bullet'], 180: ['rating_blitz', 'Blitz']
 const rating2Col = tc => (RATING2[tc] || ['rating'])[0];
 const rating2Name = tc => (RATING2[tc] || [0, 'Standard'])[1];
 const ratingOf = (p, tc) => p ? (p[rating2Col(tc)] != null ? p[rating2Col(tc)] : p.rating) : '';
+// Titles and classes by rating, shown next to names
+const TITLES = [
+  [2700, 'sgm', 'Super GM', 'Super Grandmaster (informal)'],
+  [2500, 'gm', 'GM', 'Grandmaster (GM)'],
+  [2400, 'im', 'IM', 'International Master (IM)'],
+  [2300, 'fm', 'FM', 'FIDE Master (FM)'],
+  [2200, 'cm', 'CM', 'Candidate Master / National Master'],
+  [2000, 'ex', 'Expert', 'Expert'],
+  [1800, 'ca', 'Class A', 'Class A'],
+  [1600, 'cb', 'Class B', 'Class B'],
+  [1400, 'cc', 'Class C', 'Class C'],
+  [1200, 'cd', 'Class D', 'Class D'],
+  [1000, 'ce', 'Class E', 'Class E'],
+  [-Infinity, 'nv', 'Novice', 'Novice / Beginner']
+];
+const chessTitle = r => { const t = TITLES.find(x => r >= x[0]); return {cls: t[1], short: t[2], full: t[3]}; };
+const titleBadge = (r, long) => {
+  if (r == null || r === '' || isNaN(+r)) return '';
+  const t = chessTitle(+r);
+  return `<span class="ttl t-${t.cls}" title="${esc(t.full)}">${esc(long ? t.full : t.short)}</span>`;
+};
+const bestRating = p => p ? Math.max(p.rating || 0, p.rating_bullet || 0, p.rating_blitz || 0) : 0;   // a player's title follows their best 2-player rating
 const RATING4 = {60: ['rating4_bullet', 'Bullet'], 180: ['rating4_blitz', 'Blitz'], 300: ['rating4_std', 'Standard'], 600: ['rating4_std', 'Standard']};
 
 function seatName4(c) {
@@ -2623,6 +2656,62 @@ function commit(from, to, promo) {
   else if (S.mode === 'ai' && !end) aiMove();
 }
 
+/* ═════════════ Strong bots: Stockfish for ratings above 1000 ═════════════
+   Up to 1000 the bots use the built-in engine (which plays like a strong club player at best). Above that a real
+   Stockfish (asm.js build, GPL) is loaded once from a CDN into a web worker and its Skill Level is set from the
+   rating: 1000 is Skill 0 and 3200 is Skill 20. The strength is approximate, and depends on the device and on how
+   long the bot is allowed to think. If the engine cannot be loaded, the built-in engine plays instead. */
+const STRONG_FROM = 1000;
+const SF_URLS = ['https://cdn.jsdelivr.net/npm/stockfish@10.0.2/src/stockfish.asm.js', 'https://unpkg.com/stockfish@10.0.2/src/stockfish.asm.js'];
+const SF = {loading: null, worker: null, busy: false, failedAt: 0, warned: false};
+const skillFor = elo => Math.max(0, Math.min(20, Math.round((elo - STRONG_FROM) / 110)));
+
+function loadStockfish() {
+  if (SF.loading) return SF.loading;
+  if (SF.failedAt && Date.now() - SF.failedAt < 60000) return Promise.reject(new Error('engine unavailable'));
+  SF.loading = (async () => {
+    let code = null;
+    for (const url of SF_URLS) {
+      try { const r = await fetch(url); if (r.ok) { code = await r.text(); break; } } catch (e) { /* try the next mirror */ }
+    }
+    if (!code) throw new Error('engine download failed');
+    const w = new Worker(URL.createObjectURL(new Blob([code], {type: 'text/javascript'})));
+    await new Promise((res, rej) => {
+      const to = setTimeout(() => { w.terminate(); rej(new Error('engine did not start')); }, 20000);
+      const on = e => { if (String(e.data).indexOf('uciok') >= 0) { clearTimeout(to); w.removeEventListener('message', on); res(); } };
+      w.addEventListener('message', on);
+      w.postMessage('uci');
+    });
+    w.postMessage('setoption name Hash value 16');
+    SF.worker = w;
+    return w;
+  })().catch(e => { SF.loading = null; SF.failedAt = Date.now(); throw e; });
+  return SF.loading;
+}
+function uciToMove(g, uci) {
+  const from = uci.slice(0, 2), to = uci.slice(2, 4), pr = uci[4];
+  return g.moves({verbose: true}).find(m => m.from === from && m.to === to && (!m.promotion || m.promotion === (pr || 'q'))) || null;
+}
+function stockfishMove(g, skill, ms) {
+  return loadStockfish().then(w => new Promise((res, rej) => {
+    if (SF.busy) return rej(new Error('engine busy'));
+    SF.busy = true;
+    let to;
+    const done = (m, err) => { clearTimeout(to); w.removeEventListener('message', on); SF.busy = false; if (err) rej(err); else res(m); };
+    const on = e => {
+      const m = /^bestmove (\S+)/.exec(String(e.data));
+      if (!m) return;
+      const mv = uciToMove(g, m[1]);
+      done(mv, mv ? null : new Error('engine gave an unusable move'));
+    };
+    to = setTimeout(() => { w.postMessage('stop'); done(null, new Error('engine timed out')); }, ms + 6000);
+    w.addEventListener('message', on);
+    w.postMessage('setoption name Skill Level value ' + skill);
+    w.postMessage('position fen ' + g.fen());
+    w.postMessage('go movetime ' + Math.max(50, Math.round(ms)));
+  }));
+}
+
 // How long any bot "thinks" before it moves, by time control: [min, max] seconds.
 // Bullet 0.2-1s, Blitz 1-2s, everything else (Original, Long, untimed, 4-player) 2-4s.
 function thinkMs(tc) {
@@ -2648,9 +2737,17 @@ function aiMove() {
     }
     render();
   };
-  setTimeout(() => {                                   // a beat first, so the "thinking" state paints
+  setTimeout(async () => {                             // a beat first, so the "thinking" state paints
     if (S.game !== g || S.mode !== 'ai' || S.over) return play(null);
-    const m = bot ? pickBotMove(g, S.botElo, S.tc === 60 ? 2 : 3, Math.max(120, wait - 100)) : pickAIMove(g, S.aiLevel, S.tc === 60 ? 2 : 3);
+    let m = null;
+    if (bot && S.botShown > STRONG_FROM) {
+      try { m = await stockfishMove(g, skillFor(S.botShown), Math.max(120, wait - 100)); }
+      catch (e) {
+        if (!SF.warned) { SF.warned = true; toast('Could not load the strong engine, so the built-in one is playing (it tops out around a strong club player).', true); }
+      }
+      if (S.game !== g || S.mode !== 'ai') return;     // the game changed while the engine was thinking
+    }
+    if (!m) m = bot ? pickBotMove(g, S.botElo, S.tc === 60 ? 2 : 3, Math.max(120, wait - 100)) : pickAIMove(g, S.aiLevel, S.tc === 60 ? 2 : 3);
     // the search itself counts towards the think time; only wait for whatever is left
     setTimeout(() => play(m), Math.max(0, wait - (Date.now() - t0)));
   }, 50);
@@ -2754,14 +2851,14 @@ function bindBoard() {
 function playerInfo(color) {
   if (S.mode === 'local') return {name: color === 'w' ? 'White' : 'Black'};
   if (S.mode === 'ai') {
-    if (color === S.color) return {name: S.profile ? S.profile.username : 'You'};
-    if (S.botElo) return {name: S.botName, sub: String(S.botShown || S.botElo)};
+    if (color === S.color) return {name: S.profile ? S.profile.username : 'You', rating: S.profile && !S.profile.is_guest ? ratingOf(S.profile, S.tc) : null};
+    if (S.botElo) return {name: S.botName, sub: String(S.botShown || S.botElo), rating: S.botShown || S.botElo};
     return {name: 'Computer', sub: ['', 'Easy', 'Medium', 'Hard'][S.aiLevel]};
   }
   const row = S.online.row, id = color === 'w' ? row.white_id : row.black_id;
   if (!id) return {name: 'Waiting for opponent…'};
   const p = PC[id];
-  return {name: p ? p.username : 'Player', sub: p ? String(ratingOf(p, row.time_control)) : ''};
+  return {name: p ? p.username : 'Player', sub: p ? String(ratingOf(p, row.time_control)) : '', rating: p && !p.is_guest ? ratingOf(p, row.time_control) : null};
 }
 
 function captured(g) {
@@ -2781,7 +2878,7 @@ function fillBar(el, color, g) {
     const ms = clockMs(color);
     clk = `<span class="clk${isRunning(color) ? ' run' : ''}${ms < 10000 ? ' low' : ''}" data-c="${color}">${fmtClock(ms)}</span>`;
   }
-  el.innerHTML = `<span class="dot"></span><span class="pname">${esc(info.name)}${info.sub ? `<em>${esc(info.sub)}</em>` : ''}</span><span class="caps">${cap.out[color].map(t => `<span class="cp ${opp}">${GLYPH[t]}</span>`).join('')}</span><span class="adv">${cap.diff[color] > 0 ? '+' + cap.diff[color] : ''}</span>${clk}`;
+  el.innerHTML = `<span class="dot"></span><span class="pname">${esc(info.name)}${info.sub ? `<em>${esc(info.sub)}</em>` : ''}${info.rating != null ? titleBadge(info.rating) : ''}</span><span class="caps">${cap.out[color].map(t => `<span class="cp ${opp}">${GLYPH[t]}</span>`).join('')}</span><span class="adv">${cap.diff[color] > 0 ? '+' + cap.diff[color] : ''}</span>${clk}`;
 }
 
 function statusText() {
@@ -3205,8 +3302,7 @@ function bindStatic() {
   $('tc-local').innerHTML = tcSeg('seg-local-tc', 0);
   initSeg($('seg-ai-tc')); initSeg($('seg-local-tc'));
   // Single: the computer's rating is a slider; it plays at that rating (on the engine's own scale)
-  const eloName = e => e < 250 ? 'Beginner' : e < 450 ? 'Casual' : e < 650 ? 'Club player' : e < 850 ? 'Strong' : 'Expert';
-  const paintElo = () => { const e = +$('elo-slider').value; $('elo-val').textContent = e; $('elo-name').textContent = eloName(e); };
+  const paintElo = () => { const e = +$('elo-slider').value; $('elo-val').textContent = e; $('elo-name').textContent = chessTitle(e).full; if (e > STRONG_FROM) loadStockfish().catch(() => {}); };   // start fetching the strong engine as soon as it might be needed
   $('elo-slider').addEventListener('input', paintElo); paintElo();
   $('start-ai').onclick = () => { const e = +$('elo-slider').value; startAI(0, $('seg-color').dataset.val, +$('seg-ai-tc').dataset.val, e + BOT_SCALE, e, null, 'Computer'); };
   document.querySelectorAll('.acc-h').forEach(b => { b.onclick = () => toggleAcc(b.closest('.acc').id); });
