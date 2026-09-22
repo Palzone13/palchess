@@ -1459,6 +1459,27 @@ function sfxEnd() {
 }
 // Called after every render: plays a sound when a new move (yours, the computer's or your
 // opponent's) or a game result appears. A freshly opened game stays silent until something happens.
+// Plays a sound for each step taken in Overview (Next/Back/First/Last, clicking a move, arrow keys,
+// or Auto-play) - the same move sounds as live play, plus the game's result sound on reaching the last
+// move. Nothing plays just from opening Overview, only from moving away from where it opened.
+function syncReviewSfx() {
+  if (!S.review) return;
+  const ply = S.review.ply, prev = S.review.sfxPly;
+  S.review.sfxPly = ply;
+  if (prev == null || prev === ply) return;
+  if (ply <= 0) return;
+  const h = S.game.history({verbose: true}), m = h[ply - 1];
+  if (!m) return;
+  if (/[+#]/.test(m.san)) sfx('check');
+  else if (m.captured) sfx('capture');
+  else if (m.flags.indexOf('k') >= 0 || m.flags.indexOf('q') >= 0) sfx('castle');
+  else if (m.promotion) sfx('promote');
+  else sfx('move');
+  if (ply === h.length && S.over) {
+    setTimeout(() => sfx(S.over.result === '1/2-1/2' ? 'draw' : (S.mode === 'local' || (S.over.result === '1-0') === (S.color === 'w')) ? 'win' : 'lose'), 280);
+  }
+}
+
 function syncSfx() {
   if (!S.game || S.review) return;
   const n = S.game.history().length;
@@ -2123,7 +2144,7 @@ function render4() {
   }
   const st = viewState4();
   renderBoard4(st); renderBars4(st); renderSide4(st);
-  syncSfx4();
+  syncSfx4(); syncReviewSfx4();
   if (G4.over && !G4.overShown && !G4.review) showOver4();
 }
 
@@ -2286,7 +2307,7 @@ function renderSide4(st) {
     return;
   }
   if (o && o.row.status === 'waiting' && o.row.creator_id === S.user.id) add('Start game', start4Online, 'primary');
-  if (G4.over && total) add('Overview', () => { G4.review = {ply: total}; render4(); }, 'primary');
+  if (G4.over && total) add('Overview', () => { G4.review = {ply: total, sfxPly: null}; render4(); }, 'primary');
   add('Rotate board', () => { G4.orient = (G4.orient + 1) % 4; render4(); });
   if (!o && !G4.over) add('New game', () => start4(G4.mode, G4.tc));
   if (o && o.row.status === 'active' && !G4.over && G4.me >= 0 && st.alive[G4.me]) add('Resign', confirmResign4, 'danger');
@@ -2314,7 +2335,7 @@ function showOver4() {
   const list = o.draw ? `<p>A draw between ${o.order.map(c => C4[c]).join(', ')}.</p>` : `<ol>${o.order.map((c, i) => `<li>${['1st', '2nd', '3rd', '4th'][i]}: ${esc(nm(c))} (${C4[c]})</li>`).join('')}</ol>`;
   const rated = G4.mode === 'online' && tc4() > 0;
   modal(o.draw ? 'Draw' : o.botsOnly ? 'Game over' : `${nm(o.order[0])} wins`, `${list}${o.botsOnly ? '<p class="muted small">Everyone still in the game was a bot, so it ended automatically.</p>' : ''}<p class="muted small">Points: ${[0, 1, 2, 3].map(c => `${C4[c]} ${G4.st.score[c]}`).join(', ')}.${rated ? '' : ' This game is unrated.'}</p>`, [
-    {label: 'Overview', cls: 'primary', onClick: () => { G4.review = {ply: G4.st.hist.length}; render4(); }},
+    {label: 'Overview', cls: 'primary', onClick: () => { G4.review = {ply: G4.st.hist.length, sfxPly: null}; render4(); }},
     {label: 'Close', cls: 'ghost'}
   ], true);
 }
@@ -2326,6 +2347,24 @@ function confirmResign4() {
 }
 
 // sounds: one per move, plus the result
+// Same idea for the 4-player Overview: rebuilds the position at each step to read what happened there.
+function syncReviewSfx4() {
+  if (!G4.review) return;
+  const ply = G4.review.ply, prev = G4.review.sfxPly;
+  G4.review.sfxPly = ply;
+  if (prev == null || prev === ply || ply <= 0) return;
+  const st = replay4(G4.st.hist.slice(0, ply)), m = st.lastMove, ev = st.events;
+  if (ev.some(e => e.t === 'mate' || e.t === 'stalemate')) sfx('check');
+  else if ([0, 1, 2, 3].some(c => st.alive[c] && inCheck4(st, c))) sfx('check');
+  else if (m && m.cap) sfx('capture');
+  else if (m && m.castle) sfx('castle');
+  else if (m && m.promo) sfx('promote');
+  else sfx('move');
+  if (ply === G4.st.hist.length && G4.over) {
+    setTimeout(() => sfx(G4.over.draw ? 'draw' : (G4.mode === 'local' || G4.over.order[0] === G4.me) ? 'win' : 'lose'), 280);
+  }
+}
+
 function syncSfx4() {
   if (G4.review) return;
   const st = G4.st, n = st.hist.length, grew = G4.sfxPly >= 0 && n > G4.sfxPly;
@@ -2824,7 +2863,7 @@ function lastOf(g) {
   const h = g.history({verbose: true});
   return h.length ? {from: h[h.length - 1].from, to: h[h.length - 1].to} : null;
 }
-function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); drawAdminArrow(); }
+function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); syncReviewSfx(); drawAdminArrow(); }
 
 function findKing(brd, color) {
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -3263,6 +3302,7 @@ function startReview() {
     timer: null,
     analysis: {},
     analyzing: false,
+    sfxPly: null,
   };
   render();
   /*
