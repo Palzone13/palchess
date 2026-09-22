@@ -454,6 +454,21 @@ const TC = [
 const tcLabel = v => { const t = TC.find(x => x.v === v); return t && t.v ? `${t.name} ${t.sub}` : 'Untimed'; };
 const tcSeg = (id, def) => `<div class="seg tc" id="${id}" data-val="${def}" aria-label="Time control">${TC.map(t => `<button type="button" data-v="${t.v}"${t.v === def ? ' class="on"' : ''}><b>${t.name}</b>${t.sub ? `<small>${t.sub}</small>` : ''}</button>`).join('')}</div>`;
 
+// Invite links: palchess.vercel.app/AB12CD, where AB12CD is the game's own 6-character code.
+// Requires the host's server to send every path to index.html - see vercel.json.
+const inviteLink = code => `${location.origin}/${code}`;
+function copyInviteLink(code, label) {
+  const link = inviteLink(code);
+  if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => toast((label || 'Invite link') + ' copied.'));
+  else toast(link);
+}
+// A code straight in the address bar (from a shared link) - grabbed once on load, then the URL is cleaned up.
+function takeUrlInviteCode() {
+  const seg = location.pathname.replace(/^\/+|\/+$/g, '');
+  if (history.replaceState && seg) history.replaceState(null, '', '/');
+  return /^[A-Za-z0-9]{4,8}$/.test(seg) ? seg.toUpperCase() : null;
+}
+
 /* ═════════════ Helpers ═════════════ */
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -680,6 +695,7 @@ const S = {
   online: null, lobbyTimer: null,
   review: null,          // {ply, timer, analysis} while the post-game overview is open
   tc: 0, clock: null,    // time control (seconds) and clocks for computer / pass-and-play games
+  pendingCode: null,      // a game code taken from the URL (e.g. /AB12CD), waiting to be joined
   sfxPly: -1, endPlayed: null, lowSec: 0, unread: 0,
   notes: [], pending: {friends: [], challenges: []}, notesTimer: null,   // notification centre
   mm: null,                                                                // quick-match search in progress
@@ -918,9 +934,20 @@ function initSeg(root) {
   });
 }
 
+async function tryPendingCode() {
+  const code = S.pendingCode;
+  if (!code || !S.user || busyPlaying()) return;
+  S.pendingCode = null;                 // consume it so this can only ever fire once
+  toast(`Opening game ${code}…`);
+  const f = await findByCode(code);
+  if (!f) return toast('That invite link is no longer valid.', true);
+  openFound(f);
+}
+
 function goLobby() {
   showView('lobby');
   renderLobby();
+  tryPendingCode();
   cleanupThenLoad();
   clearInterval(S.lobbyTimer);
   S.lobbyTimer = setInterval(loadLobbyData, 8000);
@@ -944,6 +971,7 @@ function renderLobby() {
     $('guest-code').addEventListener('keydown', e => { if (e.key === 'Enter') guestJoin(); });
     $('lb-signin').onclick = () => { S.guest = false; renderUserBox(); showView('auth'); };
     $('me-card').innerHTML = ''; fb.innerHTML = ''; fb.onclick = null;
+    if (S.pendingCode) { $('guest-code').value = S.pendingCode; openAcc('acc-multi'); }
     return;
   }
   if (isGuest()) {
@@ -953,6 +981,7 @@ function renderLobby() {
     $('join-code').onclick = joinByCode;
     $('code-in').addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
     fb.innerHTML = ''; fb.onclick = null;
+    if (S.pendingCode) { $('code-in').value = S.pendingCode; openAcc('acc-multi'); }
     renderMeCard();
     return;
   }
@@ -986,6 +1015,7 @@ function renderLobby() {
   $('quick-match').onclick = () => startMatchmaking(+$('seg-otc').dataset.val);
   $('join-code').onclick = joinByCode;
   $('code-in').addEventListener('keydown', e => { if (e.key === 'Enter') joinByCode(); });
+  if (S.pendingCode) { $('code-in').value = S.pendingCode; openAcc('acc-multi'); }
   ['open-games', 'my-games', 'chal-games'].forEach(id => $(id).addEventListener('click', onGameListClick));
 
   fb.innerHTML = `
@@ -2285,7 +2315,8 @@ function renderSide4(st) {
   const o = G4.online, inv = $('invite4');
   if (o && o.row.status === 'waiting') {
     inv.classList.remove('hidden');
-    inv.innerHTML = `<div class="muted">${esc(tcLabel(o.row.time_control))}${o.row.time_control ? ', rated when 2 or more account players take part' : ', unrated'}</div><div class="muted">Share this code${o.row.allow_guests ? '. Guests can join without an account' : ''}</div><div class="big">${esc(o.row.code)}</div><button class="btn sm" id="copy4" type="button">Copy code</button>`;
+    inv.innerHTML = `<div class="muted">${esc(tcLabel(o.row.time_control))}${o.row.time_control ? ', rated when 2 or more account players take part' : ', unrated'}</div><div class="muted">Share this code or the link${o.row.allow_guests ? '. Guests can join without an account' : ''}</div><div class="big">${esc(o.row.code)}</div><div class="row"><button class="btn sm primary" id="copy-link4" type="button">Copy invite link</button><button class="btn sm ghost" id="copy4" type="button">Copy code</button></div>`;
+    $('copy-link4').onclick = () => copyInviteLink(o.row.code);
     $('copy4').onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText(o.row.code).then(() => toast('Code copied.')); };
   } else inv.classList.add('hidden');
 
@@ -2560,6 +2591,14 @@ async function replaceWithBot4(seat) {
 function toggleAcc(id) {
   document.querySelectorAll('.acc').forEach(a => {
     const h = a.querySelector('.acc-h'), open = a.id === id && h.getAttribute('aria-expanded') !== 'true';
+    h.setAttribute('aria-expanded', String(open));
+    a.querySelector('.acc-b').hidden = !open;
+    a.classList.toggle('open', open);
+  });
+}
+function openAcc(id) {
+  document.querySelectorAll('.acc').forEach(a => {
+    const h = a.querySelector('.acc-h'), open = a.id === id;
     h.setAttribute('aria-expanded', String(open));
     a.querySelector('.acc-b').hidden = !open;
     a.classList.toggle('open', open);
@@ -3009,7 +3048,8 @@ function renderSide(vg) {
   if (S.mode === 'online' && S.online.row.status === 'waiting') {
     const row = S.online.row;
     inv.classList.remove('hidden');
-    inv.innerHTML = `<div class="muted">${row.invited_id ? 'Challenge sent to ' + esc(nameOf(row.invited_id)) + '. You can also share this code.' : 'Share this code with a friend'}</div><div class="muted">${esc(tcLabel(row.time_control))}</div><div class="big">${esc(row.code)}</div><button class="btn sm" id="copy-code" type="button">Copy code</button>`;
+    inv.innerHTML = `<div class="muted">${row.invited_id ? 'Challenge sent to ' + esc(nameOf(row.invited_id)) + '. You can also share this code.' : 'Share this code with a friend, or send the link'}</div><div class="muted">${esc(tcLabel(row.time_control))}</div><div class="big">${esc(row.code)}</div><div class="row"><button class="btn sm primary" id="copy-link" type="button">Copy invite link</button><button class="btn sm ghost" id="copy-code" type="button">Copy code</button></div>`;
+    $('copy-link').onclick = () => copyInviteLink(row.code);
     $('copy-code').onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText(row.code).then(() => toast('Code copied.')); };
   } else inv.classList.add('hidden');
 
@@ -3413,6 +3453,7 @@ function bindStatic() {
 }
 
 (async function init() {
+  S.pendingCode = takeUrlInviteCode();
   bindStatic();
   const {data} = await sb.auth.getSession();
   if (data && data.session) await syncAccount(); else showView('auth');
