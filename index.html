@@ -834,9 +834,9 @@ function adminBestMove() {
   return move ? {san: move.san, from: move.from, to: move.to, promotion: move.promotion || null, color: palColor, fen: S.game.fen()} : null;
 }
 
-// The board arrow for the admin menu: practice games against the computer only
-// (not online games against real players, and not rated bot matches).
-const adminArrowAllowed = () => S.mode === 'ai' && !S.botMatchId && !!S.game && !S.review;
+// The board arrow for the admin menu: any game where it's PAL's move on the visible board
+// (adminBestMove already restricts this to the PAL account and to PAL's own turn).
+const adminArrowAllowed = () => (S.mode === 'ai' || S.mode === 'online') && !S.botMatchId && !!S.game && !S.review;
 function drawAdminArrow() {
   let svg = $('admin-arrow');
   const m = S.adminSuggestion;
@@ -881,7 +881,7 @@ function showAdminMenu() {
       S.adminSuggestion = m;
       const arrow = adminArrowAllowed();
       drawAdminArrow();
-      box.innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div>${arrow ? '<div class="admin-meta">The arrow on the board shows the move.</div>' : '<div class="admin-meta">The arrow is only drawn in practice games against the computer, not in online or rated games.</div>'}`;
+      box.innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div>${arrow ? '<div class="admin-meta">The arrow on the board shows the move.</div>' : '<div class="admin-meta">The arrow is not shown here (not a game, or not the PAL account\'s move).</div>'}`;
     }, 30);
   };
 }
