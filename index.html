@@ -112,7 +112,7 @@ label input{margin-top:6px}
 /* game */
 #view-game{--bs:max(280px,min(calc(100vw - 32px),calc(100vh - 210px),680px))}
 .game{display:flex;flex-wrap:wrap;gap:32px;justify-content:center;align-items:flex-start;padding:20px 16px 48px}
-.board-wrap{width:var(--bs)}
+.board-wrap{width:var(--bs);position:relative}
 .board{width:var(--bs);height:var(--bs);display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border-radius:12px;overflow:hidden;box-shadow:0 20px 56px rgba(0,0,0,.5),0 0 0 6px var(--panel2);touch-action:manipulation}
 .board .sq.last::before{content:"";position:absolute;inset:0;background:rgba(242,184,60,.5)}
 .board .sq.sel{box-shadow:inset 0 0 0 4px var(--gold)}
@@ -816,7 +816,7 @@ function isPalAdmin() {
 }
 
 function closeAdminMenu() {
-  S.adminOpen = false;
+  S.adminOpen = false; S.adminSuggestion = null; drawAdminArrow();
   const p = $('admin-panel');
   if (p) p.remove();
   const b = $('btn-admin');
@@ -831,7 +831,31 @@ function adminBestMove() {
   if (!palColor || S.game.turn() !== palColor || S.over) return null;
   const g = new Chess(S.game.fen());
   const move = pickBotMove(g, 2400, 3, 700);
-  return move ? {san: move.san, from: move.from, to: move.to, promotion: move.promotion || null, color: palColor} : null;
+  return move ? {san: move.san, from: move.from, to: move.to, promotion: move.promotion || null, color: palColor, fen: S.game.fen()} : null;
+}
+
+// The board arrow for the admin menu: practice games against the computer only
+// (not online games against real players, and not rated bot matches).
+const adminArrowAllowed = () => S.mode === 'ai' && !S.botMatchId && !!S.game && !S.review;
+function drawAdminArrow() {
+  let svg = $('admin-arrow');
+  const m = S.adminSuggestion;
+  if (!m || !S.adminOpen || !adminArrowAllowed() || m.fen !== S.game.fen()) { if (svg) svg.remove(); return; }
+  const b = $('board'), wrap = b.parentElement;
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'admin-arrow'; svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(svg);
+  }
+  svg.style.cssText = `position:absolute;left:${b.offsetLeft}px;top:${b.offsetTop}px;width:${b.offsetWidth}px;height:${b.offsetHeight}px;pointer-events:none;z-index:6`;
+  const centre = sq => { const f = FILES.indexOf(sq[0]), rk = +sq[1] - 1; return [(S.flip ? 7 - f : f) + 0.5, (S.flip ? rk : 7 - rk) + 0.5]; };
+  const [x1, y1] = centre(m.from), [x2, y2] = centre(m.to);
+  const len = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+  const head = 0.5, half = 0.3, bx = x2 - ux * head, by = y2 - uy * head;       // where the shaft meets the arrow head
+  const f = n => n.toFixed(3);
+  svg.innerHTML = `<g opacity="0.88"><circle cx="${f(x1)}" cy="${f(y1)}" r="0.44" fill="none" stroke="#f2b83c" stroke-width="0.07"/>` +
+    `<line x1="${f(x1 + ux * 0.44)}" y1="${f(y1 + uy * 0.44)}" x2="${f(bx)}" y2="${f(by)}" stroke="#f2b83c" stroke-width="0.17" stroke-linecap="round"/>` +
+    `<polygon points="${f(x2)},${f(y2)} ${f(bx - uy * half)},${f(by + ux * half)} ${f(bx + uy * half)},${f(by - ux * half)}" fill="#f2b83c"/></g>`;
 }
 
 function showAdminMenu() {
@@ -840,7 +864,7 @@ function showAdminMenu() {
   const panel = document.createElement('div');
   panel.id = 'admin-panel'; panel.className = 'admin-panel';
   panel.setAttribute('role','dialog'); panel.setAttribute('aria-label','PAL Admin');
-  panel.innerHTML = `<h3>PAL Admin</h3><p class="muted small">Match analysis tools for the PAL account.</p><div id="admin-analysis"><div class="admin-meta">Press the button to calculate PAL's next move.</div></div><div class="admin-actions"><button class="btn primary" id="admin-best" type="button">Find best move</button><button class="btn ghost" id="admin-close" type="button">Close</button></div>`;
+  panel.innerHTML = `<h3>PAL Admin</h3><p class="muted small">Match analysis tools for the PAL account.</p><div id="admin-analysis"><div class="admin-meta">Press the button to calculate PAL's next move.</div></div><div class="admin-actions"><button class="btn primary" id="admin-best" type="button">Next move</button><button class="btn ghost" id="admin-close" type="button">Close</button></div>`;
   document.body.appendChild(panel);
   S.adminOpen = true;
   $('btn-admin').setAttribute('aria-expanded','true');
@@ -855,7 +879,9 @@ function showAdminMenu() {
         return;
       }
       S.adminSuggestion = m;
-      box.innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div>`;
+      const arrow = adminArrowAllowed();
+      drawAdminArrow();
+      box.innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div>${arrow ? '<div class="admin-meta">The arrow on the board shows the move.</div>' : '<div class="admin-meta">The arrow is only drawn in practice games against the computer, not in online or rated games.</div>'}`;
     }, 30);
   };
 }
@@ -1969,8 +1995,7 @@ const tok4 = m => sq4(m[0], m[1]) + sq4(m[2], m[3]);
 // final standings, best first (a draw shares first place). "out" is the knock-out order, first out first: ratings use it.
 function standings4(st) {
   if (st.draw) return {draw: true, order: [0, 1, 2, 3].filter(c => st.alive[c]), out: st.out.slice()};
-  const win = [0, 1, 2, 3].find(c => st.alive[c]);
-  return {draw: false, order: [win].concat(st.out.slice().reverse()), out: st.out.slice()};
+  return {draw: false, order: [0, 1, 2, 3].filter(c => st.alive[c]).concat(st.out.slice().reverse()), out: st.out.slice(), botsOnly: !!st.botsEnd};
 }
 const seatOf4 = (tok, st) => (tok[0] === 'R' || tok[0] === 'T') ? +tok.slice(1) : st.turn;
 
@@ -2068,6 +2093,18 @@ function teardown4() {
   G4.on = false; G4.online = null; G4.review = null; G4.mode = null;
 }
 
+// When everyone still in the game is a bot, nobody is left to play: the game ends on the spot.
+// (Survivors share first place; the humans finish below them, in reverse order of being knocked out.)
+function endIfOnlyBots4() {
+  const st = G4.st;
+  if (!G4.on || !st || st.turn < 0 || G4.mode === 'local') return false;
+  if (G4.mode === 'online' && G4.online.row.status !== 'active') return false;
+  if (![0, 1, 2, 3].some(c => !G4.bots[c] && G4.names[c])) return false;      // a game with no human seats has nothing to end
+  if ([0, 1, 2, 3].some(c => st.alive[c] && !G4.bots[c])) return false;       // somebody human is still in
+  st.turn = -1; st.botsEnd = true;
+  return true;
+}
+
 function canMove4() {
   const st = G4.st;
   if (!G4.on || !st || G4.over || G4.review || st.turn < 0) return false;
@@ -2080,11 +2117,12 @@ function canMove4() {
 function viewState4() { return G4.review ? replay4(G4.st.hist.slice(0, G4.review.ply)) : G4.st; }
 
 function render4() {
-  const st = viewState4();
-  renderBoard4(st); renderBars4(st); renderSide4(st);
+  // work out whether the game is over first, so the status line never looks at a finished position
   if (!G4.over && G4.st.turn < 0 && (G4.mode !== 'online' || G4.online.row.status !== 'waiting')) {
     G4.over = G4.online && G4.online.row.result ? G4.online.row.result : standings4(G4.st);
   }
+  const st = viewState4();
+  renderBoard4(st); renderBars4(st); renderSide4(st);
   syncSfx4();
   if (G4.over && !G4.overShown && !G4.review) showOver4();
 }
@@ -2202,6 +2240,10 @@ function statusText4(st) {
   if (G4.over) {
     const ov = G4.over;
     if (ov.draw) return 'Draw. Nobody could make progress.';
+    if (ov.botsOnly) {
+      const pl = ov.order.indexOf(G4.me);
+      return 'Only bots are left, so the game ended.' + (pl >= 0 ? ` You finished ${['1st', '2nd', '3rd', '4th'][pl]}.` : '');
+    }
     const w = ov.order[0];
     if (G4.mode === 'local') return `${C4[w]} wins.`;
     if (G4.me === w) return 'You win.';
@@ -2270,7 +2312,8 @@ function showOver4() {
   G4.overShown = true;
   const nm = c => G4.names[c] || C4[c];
   const list = o.draw ? `<p>A draw between ${o.order.map(c => C4[c]).join(', ')}.</p>` : `<ol>${o.order.map((c, i) => `<li>${['1st', '2nd', '3rd', '4th'][i]}: ${esc(nm(c))} (${C4[c]})</li>`).join('')}</ol>`;
-  modal(o.draw ? 'Draw' : `${nm(o.order[0])} wins`, `${list}<p class="muted small">Points: ${[0, 1, 2, 3].map(c => `${C4[c]} ${G4.st.score[c]}`).join(', ')}. 4-player games are unrated.</p>`, [
+  const rated = G4.mode === 'online' && tc4() > 0;
+  modal(o.draw ? 'Draw' : o.botsOnly ? 'Game over' : `${nm(o.order[0])} wins`, `${list}${o.botsOnly ? '<p class="muted small">Everyone still in the game was a bot, so it ended automatically.</p>' : ''}<p class="muted small">Points: ${[0, 1, 2, 3].map(c => `${C4[c]} ${G4.st.score[c]}`).join(', ')}.${rated ? '' : ' This game is unrated.'}</p>`, [
     {label: 'Overview', cls: 'primary', onClick: () => { G4.review = {ply: G4.st.hist.length}; render4(); }},
     {label: 'Close', cls: 'ghost'}
   ], true);
@@ -2322,6 +2365,7 @@ function commit4(tok) {
   G4.since = Date.now();
   G4.log.push(logEntry4(st, tok, c));
   G4.sel = null; G4.targets = []; G4.lastTurnAt = Date.now();
+  endIfOnlyBots4();
   render4();
   if (G4.mode === 'online') send4();
   maybeBot4();
@@ -2374,7 +2418,9 @@ async function open4Online(row) {
   seatInfo4(row);
   G4.orient = Math.max(0, G4.me);
   if (row.status === 'finished') { G4.over = row.result || standings4(r.st); G4.overShown = true; G4.endPlayed = true; }
+  const endedNow = endIfOnlyBots4();               // e.g. the last human left while the host was away
   showView('game4'); render4();
+  if (endedNow && row.creator_id === S.user.id) send4();
   const id = row.id;
   G4.online.channel = sb.channel('g4-' + id)
     .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games4', filter: 'id=eq.' + id}, p => applyRow4(p.new))
@@ -2411,6 +2457,7 @@ async function applyRow4(row) {
     } else { const r = rebuild4(row.moves); G4.st = r.st; G4.log = r.log; }
     G4.lastTurnAt = Date.now(); G4.sel = null; G4.targets = [];
   }
+  endIfOnlyBots4();
   if (row.status === 'finished' && !G4.over) G4.over = row.result || standings4(G4.st);
   render4(); maybeBot4();
   if (G4.over) settle4Online();
@@ -2436,7 +2483,9 @@ async function resync4() {
   const r = rebuild4(data.moves);
   G4.st = r.st; G4.log = r.log; G4.sel = null; G4.targets = [];
   if (data.status === 'finished') G4.over = data.result || standings4(r.st);
+  const endedNow = endIfOnlyBots4();
   render4(); maybeBot4();
+  if (endedNow && data.creator_id === S.user.id) send4();
 }
 async function settle4Online() {
   const o = G4.online;
@@ -2775,7 +2824,7 @@ function lastOf(g) {
   const h = g.history({verbose: true});
   return h.length ? {from: h[h.length - 1].from, to: h[h.length - 1].to} : null;
 }
-function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); }
+function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); drawAdminArrow(); }
 
 function findKing(brd, color) {
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -3290,6 +3339,7 @@ function bindStatic() {
   renderSoundBtn();
   $('btn-sound').onclick = () => setSound(!SFX.on);
   $('btn-admin').onclick = showAdminMenu;
+  window.addEventListener('resize', drawAdminArrow);
   ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (SFX.on) audio(); }, {once: true}));   // browsers only allow audio after a tap or key press
   $('tab-in').onclick = () => setAuthMode('in');
   $('tab-up').onclick = () => setAuthMode('up');
