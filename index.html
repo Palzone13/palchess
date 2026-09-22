@@ -33,10 +33,10 @@ p{margin:0 0 12px}
 button{font-family:inherit}
 
 /* header */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.top{display:flex;flex-wrap:wrap;row-gap:8px;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
 .brand{display:flex;align-items:center;gap:10px;background:none;border:0;color:var(--text);font:800 20px var(--f-head);letter-spacing:-.02em;cursor:pointer;padding:4px 0}
 .brand .mark{font-family:var(--f-piece);font-size:28px;color:var(--gold);line-height:1}
-.userbox{display:flex;align-items:center;gap:12px;font-weight:600}
+.userbox{display:flex;flex-wrap:wrap;row-gap:6px;align-items:center;gap:12px;font-weight:600}
 .userbox .rate{color:var(--gold);font-family:var(--f-head);font-weight:700}
 .userbox .uname{max-width:32vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -99,7 +99,7 @@ label input{margin-top:6px}
 .tag{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--panel2);color:var(--gold)}
 .res-w{color:var(--ok)} .res-l{color:#ff9d95} .res-d{color:var(--muted)}
 .me{display:flex;align-items:center;gap:16px;margin-bottom:28px}
-.me-rate{font:800 44px var(--f-head);color:var(--gold);letter-spacing:-.03em}
+.me-rate{font:800 clamp(32px,9vw,44px) var(--f-head);color:var(--gold);letter-spacing:-.03em}
 .me-name{font:700 20px var(--f-head)}
 .leaders li{display:grid;grid-template-columns:28px 1fr auto auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:baseline}
 .leaders .rk{color:var(--muted);font-variant-numeric:tabular-nums}
@@ -124,7 +124,7 @@ label input{margin-top:6px}
 .co.rk{top:3px;left:4px}
 .co.fl{bottom:2px;right:4px}
 .sq.light .co{color:var(--deep)} .sq.dark .co{color:var(--sea)}
-.pbar{display:flex;align-items:center;gap:10px;height:44px;font-weight:600}
+.pbar{display:flex;flex-wrap:wrap;row-gap:6px;align-items:center;gap:10px;min-height:44px;font-weight:600}
 .pbar .dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
 .pbar.turn .dot{background:var(--gold);box-shadow:0 0 0 4px rgba(242,184,60,.25)}
 .pbar .pname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -135,7 +135,7 @@ label input{margin-top:6px}
 .status{font:700 21px/1.25 var(--f-head);min-height:54px;padding-top:6px}
 .status.done{color:var(--gold)}
 .invite{background:var(--panel);border:1px dashed var(--muted);border-radius:12px;padding:14px 16px}
-.invite .big{font:800 34px var(--f-head);letter-spacing:.16em;color:var(--gold)}
+.invite .big{font:800 clamp(24px,8vw,34px) var(--f-head);letter-spacing:.16em;color:var(--gold);word-break:break-all}
 .moves{list-style:none;margin:0;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;height:230px;overflow-y:auto;font-variant-numeric:tabular-nums}
 .moves li{display:grid;grid-template-columns:34px 1fr 1fr;padding:3px 0;font-weight:500;align-items:center}
 .moves .n{color:var(--muted)}
@@ -230,7 +230,7 @@ label input{margin-top:6px}
 .lbl{display:block;font-size:14px;font-weight:600;color:var(--muted);margin:0 0 8px}
 .lbl b{margin:0 8px 0 6px;font:800 20px var(--f-head);color:var(--gold)}
 input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);height:28px;cursor:pointer}
-.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.scale{display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between;font-size:12px;color:var(--muted)}
 
 /* notification center */
 .bell{position:relative}
@@ -249,7 +249,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
 .small{font-size:13px}
 
 /* live alerts */
-.hright{display:flex;align-items:center;gap:12px}
+.hright{display:flex;flex-wrap:wrap;row-gap:8px;align-items:center;justify-content:flex-end;gap:12px}
 .alerts{position:fixed;top:66px;right:16px;z-index:70;display:flex;flex-direction:column;gap:10px;width:min(340px,calc(100vw - 32px))}
 .alert{position:relative;display:flex;flex-direction:column;gap:10px;background:var(--panel2);border:1px solid var(--gold);border-radius:12px;padding:12px 40px 12px 14px;box-shadow:0 12px 32px rgba(0,0,0,.45);animation:alert-in .25s ease-out}
 .alert .atxt{display:flex;flex-direction:column;gap:2px}
@@ -290,6 +290,53 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
   .moves li{grid-template-columns:30px 1fr 1fr;font-size:13px}
   .move-review{margin-left:4px}
   .seg.tc{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:480px){
+  /* header: room is tight, so shrink everything and let it wrap onto a second row rather than overflow */
+  .top{padding:8px 12px}
+  .brand{font-size:17px;gap:7px}
+  .brand .mark{font-size:23px}
+  .hright{gap:8px}
+  .hright > .btn{padding:8px 10px;min-height:38px}
+  .userbox{gap:8px;font-size:14px}
+  .userbox .uname{max-width:34vw}
+  .userbox .rate{font-size:14px}
+  .ttl{font-size:10px;padding:1px 6px}
+
+  /* a wrapped header can run two lines tall - keep fixed panels clear of it */
+  .npanel,.alerts,.admin-panel{top:104px}
+
+  /* board screens: a little less vertical padding, and more headroom subtracted for the taller header */
+  #view-game{--bs:max(260px,min(calc(100vw - 24px),calc(100vh - 250px),680px))}
+  #view-game4{--b4:max(280px,min(calc(100vw - 20px),calc(100vh - 300px),700px))}
+  .game{gap:18px;padding:14px 10px 40px}
+  .board-wrap{width:100%;display:flex;flex-direction:column;align-items:center}
+  .side{width:100%}
+  .status{font-size:18px;min-height:auto}
+  .controls .btn{padding:11px 14px}
+  .pbar .clk{min-width:64px;font-size:17px}
+  .pbar .caps{padding-right:0}
+  .p4chip{font-size:13px;padding:5px 8px}
+  .p4chip .p4n{max-width:84px}
+
+  /* lobby: tighter padding, single-column everywhere */
+  .lobby{padding:20px 14px 48px}
+  .acc-h{padding:14px}
+  .acc-t b{font-size:18px}
+  .acc-b{padding:4px 14px 16px}
+  .me{gap:12px}
+
+  /* lists: let each row wrap instead of clipping names or squeezing buttons */
+  .glist li{flex-wrap:wrap;row-gap:8px}
+  .glist li .who{flex-basis:100%}
+  .leaders li{grid-template-columns:22px 1fr auto;gap:8px}
+  .leaders .wl{display:none}
+
+  /* modals: full-width stacked buttons are easier to tap with a thumb */
+  .modal{padding:18px;width:100%}
+  .mact{flex-direction:column}
+  .mact .btn{width:100%}
+  .promo{flex-wrap:wrap}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
@@ -465,7 +512,7 @@ function copyInviteLink(code, label) {
 // A code straight in the address bar (from a shared link) - grabbed once on load, then the URL is cleaned up.
 function takeUrlInviteCode() {
   const seg = location.pathname.replace(/^\/+|\/+$/g, '');
-  if (history.replaceState && seg) history.replaceState(null, '', '/');
+  if (history.replaceState && seg) { try { history.replaceState(null, '', '/'); } catch (e) { /* some hosting contexts (e.g. file://) refuse this; harmless to skip */ } }
   return /^[A-Za-z0-9]{4,8}$/.test(seg) ? seg.toUpperCase() : null;
 }
 
