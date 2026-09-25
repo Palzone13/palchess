@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PAL Chess</title>
 <meta name="color-scheme" content="dark">
+<!-- Google AdSense: replace with your own publisher id once your account is approved (Settings > Account in AdSense). -->
+<meta name="google-adsense-account" content="ca-pub-0000000000000000">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
@@ -232,6 +234,16 @@ label input{margin-top:6px}
 input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);height:28px;cursor:pointer}
 .scale{display:flex;flex-wrap:wrap;gap:4px;justify-content:space-between;font-size:12px;color:var(--muted)}
 
+/* ad slots */
+.site-foot{text-align:center;padding:24px 16px 40px;color:var(--muted);font-size:13px}
+.site-foot a{color:var(--muted);text-decoration:underline}
+.site-foot a:hover{color:var(--text)}
+.adslot{margin-top:22px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.adslot .adlabel{padding:6px 10px 0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.adslot .adbody{min-height:100px;display:flex;align-items:center;justify-content:center;padding:6px}
+.adslot .adbody ins{width:100%}
+@media (min-width:640px){.adslot .adbody{min-height:250px}}
+
 /* notification center */
 .bell{position:relative}
 .bell .badge{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--gold);color:#241a05;font:800 11px/18px var(--f-body);text-align:center}
@@ -437,6 +449,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
           <button type="button" data-v="rating" class="on">2P Standard</button><button type="button" data-v="rating_bullet">2P Bullet</button><button type="button" data-v="rating_blitz">2P Blitz</button><button type="button" data-v="rating4_bullet">4P Bullet</button><button type="button" data-v="rating4_blitz">4P Blitz</button><button type="button" data-v="rating4_std">4P Standard</button>
         </div>
         <ol class="leaders" id="leaders"></ol>
+        <div class="adslot" id="ad-lobby"><div class="adlabel">Advertisement</div><div class="adbody"></div></div>
       </div>
     </div>
   </section>
@@ -455,6 +468,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
         <ol class="moves" id="moves" aria-label="Move list"></ol>
         <div class="note muted hidden" id="note"></div>
         <div class="controls" id="controls"></div>
+        <div class="adslot" id="ad-game"><div class="adlabel">Advertisement</div><div class="adbody"></div></div>
       </aside>
     </div>
   </section>
@@ -470,11 +484,13 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
         <div class="invite hidden" id="invite4"></div>
         <ol class="moves" id="moves4" aria-label="Moves"></ol>
         <div class="controls" id="controls4"></div>
+        <div class="adslot" id="ad-game4"><div class="adlabel">Advertisement</div><div class="adbody"></div></div>
       </aside>
     </div>
   </section>
 </main>
 
+<footer class="site-foot">&copy; PAL Labs. <a href="/privacy.html">Privacy</a></footer>
 <div id="modal-root"></div>
 <div class="npanel hidden" id="npanel" role="dialog" aria-label="Notifications"></div>
 <div class="alerts" id="alerts" aria-live="polite"></div>
@@ -754,6 +770,7 @@ const PC = {}; // profile cache
 function showView(name) {
   if (name !== 'game') closeAdminMenu();
   ['auth', 'lobby', 'game', 'game4'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
+  if (name === 'lobby' || name === 'game' || name === 'game4') ensureAd(name);
   const ab = $('btn-admin');
   if (ab) { ab.classList.toggle('hidden', !(name === 'game' && isPalAdmin())); if (name !== 'game') closeAdminMenu(); }
   if (name !== 'lobby') clearInterval(S.lobbyTimer);
@@ -774,6 +791,44 @@ function authMsg(t, bad) { const m = $('auth-msg'); m.textContent = t; m.classNa
 
 const ANON_OFF_HELP = 'Turn on "Allow anonymous sign-ins" in Supabase (Authentication, Sign In / Providers). Email can stay off.';
 const NOT_SET_UP = 'The database is not set up yet. Run setup.sql in the Supabase SQL editor.';
+
+/* ═════════════ Ads (Google AdSense) ═════════════
+   Fill these in once your AdSense account is approved (ignore until then - ads just stay hidden):
+     ADSENSE_CLIENT: your publisher id, "ca-pub-XXXXXXXXXXXXXXXX" (AdSense > Account > Settings)
+     AD_SLOTS: one ad unit id per placement, from AdSense > Ads > By ad unit > Display ads (any responsive unit works for all three)
+   Also update the <meta name="google-adsense-account"> tag in <head> to the same publisher id -
+   AdSense reads that tag (not this file) to confirm you own the site. */
+const ADSENSE_CLIENT = 'ca-pub-0000000000000000';
+const AD_SLOTS = {lobby: '0000000000', game: '0000000000', game4: '0000000000'};
+const adsConfigured = () => /^ca-pub-\d+$/.test(ADSENSE_CLIENT) && ADSENSE_CLIENT !== 'ca-pub-0000000000000000';
+
+let adsLoading = null;
+function loadAdsense() {
+  if (adsLoading) return adsLoading;
+  adsLoading = new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
+    s.crossOrigin = 'anonymous';
+    s.onload = res; s.onerror = () => rej(new Error('AdSense script failed to load'));
+    document.head.appendChild(s);
+  });
+  return adsLoading;
+}
+
+// Renders one ad the first time its slot becomes visible (AdSense asks that ads not be requested
+// inside a display:none container, so this is called from showView() rather than at page load).
+const adsRendered = {};
+function ensureAd(key) {
+  if (!adsConfigured() || adsRendered[key]) return;
+  const slot = AD_SLOTS[key], box = $('ad-' + key);
+  if (!slot || !box) return;
+  adsRendered[key] = true;
+  const body = box.querySelector('.adbody');
+  body.innerHTML = `<ins class="adsbygoogle" style="display:block" data-ad-client="${ADSENSE_CLIENT}" data-ad-slot="${esc(slot)}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;
+  loadAdsense().then(() => { (window.adsbygoogle = window.adsbygoogle || []).push({}); })
+    .catch(() => { box.classList.add('hidden'); });
+}
 
 // Accounts are username + password, stored in the database (bcrypt). Each browser keeps an anonymous
 // Supabase session; logging in links that session to your account. No email is involved.
