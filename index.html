@@ -202,6 +202,7 @@ label input{margin-top:6px}
 .codein{flex:1;min-width:120px;width:auto}
 
 /* chess titles next to names */
+.streak{display:inline-flex;align-items:center;gap:3px;font:700 14px var(--f-head);color:#ff9d52}
 .ttl{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;font:700 11px/1.5 var(--f-body);letter-spacing:.02em;white-space:nowrap;vertical-align:middle;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-style:normal}
 .ttl.t-sgm{background:var(--gold);border-color:var(--gold);color:#241a05}
 .ttl.t-gm{border-color:var(--gold);color:var(--gold)}
@@ -802,6 +803,21 @@ const ADSENSE_CLIENT = 'ca-pub-0000000000000000';
 const AD_SLOTS = {lobby: '0000000000', game: '0000000000', game4: '0000000000'};
 const adsConfigured = () => /^ca-pub-\d+$/.test(ADSENSE_CLIENT) && ADSENSE_CLIENT !== 'ca-pub-0000000000000000';
 
+// Daily streak: called once per finished game (any mode, rated or not). The database decides whether
+// today already counted; a toast only appears when the streak actually changes.
+async function bumpDailyStreak() {
+  if (!S.user || !S.profile || S.profile.is_guest) return;
+  const {data, error} = await sb.rpc('bump_streak');
+  if (error) return;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return;
+  S.profile.streak_current = row.streak_current;
+  S.profile.streak_best = row.streak_best;
+  renderUserBox();
+  if (!$('view-lobby').classList.contains('hidden')) renderMeCard();
+  if (row.streak_changed) toast(`🔥 ${row.streak_current}-day streak!`);
+}
+
 let adsLoading = null;
 function loadAdsense() {
   if (adsLoading) return adsLoading;
@@ -1015,7 +1031,7 @@ function renderUserBox() {
     box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span><span class="tag">Guest</span><button class="btn ghost sm" id="btn-out" type="button">Leave</button>`;
     $('btn-out').onclick = signOut;
   } else if (S.profile) {
-    box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span>${titleBadge(bestRating(S.profile))}<span class="rate" title="Your Standard rating">${S.profile.rating}</span><button class="btn ghost sm" id="btn-pw" type="button">Password</button><button class="btn ghost sm" id="btn-out" type="button">Sign out</button>`;
+    box.innerHTML = `<span class="uname">${esc(S.profile.username)}</span>${titleBadge(bestRating(S.profile))}<span class="rate" title="Your Standard rating">${S.profile.rating}</span>${S.profile.streak_current > 0 ? `<span class="streak" title="${S.profile.streak_current}-day streak, best ${S.profile.streak_best}">🔥${S.profile.streak_current}</span>` : ''}<button class="btn ghost sm" id="btn-pw" type="button">Password</button><button class="btn ghost sm" id="btn-out" type="button">Sign out</button>`;
     $('btn-out').onclick = signOut;
     $('btn-pw').onclick = changePassword;
   } else if (S.guest) {
@@ -1137,7 +1153,7 @@ function renderLobby() {
 function renderMeCard() {
   const p = S.profile;
   if (p && p.is_guest) { $('me-card').innerHTML = '<div class="me"><div><div class="me-name">Playing as a guest</div><div class="muted">Guests can join games but not host them. Their games are unrated. Create an account to host, add friends and get a rating.</div></div></div>'; return; }
-  $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}${titleBadge(bestRating(p), true)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div><div class="muted small">2-player: Standard ${p.rating}, Bullet ${p.rating_bullet}, Blitz ${p.rating_blitz}</div><div class="muted small">4-player: Bullet ${p.rating4_bullet}, Blitz ${p.rating4_blitz}, Standard ${p.rating4_std}</div></div></div>` : '';
+  $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}${titleBadge(bestRating(p), true)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div><div class="muted small">2-player: Standard ${p.rating}, Bullet ${p.rating_bullet}, Blitz ${p.rating_blitz}</div><div class="muted small">4-player: Bullet ${p.rating4_bullet}, Blitz ${p.rating4_blitz}, Standard ${p.rating4_std}</div><div class="muted small">${p.streak_current > 0 ? `🔥 ${p.streak_current}-day streak (best ${p.streak_best})` : 'No active streak - play a game today to start one.'}</div></div></div>` : '';
 }
 
 async function loadLobbyData() {
@@ -1621,6 +1637,7 @@ function syncSfx() {
   if (S.over && S.endPlayed !== S.over) {
     S.endPlayed = S.over;
     setTimeout(sfxEnd, grew ? 280 : 0);
+    bumpDailyStreak();
   }
 }
 
@@ -2514,6 +2531,7 @@ function syncSfx4() {
   if (G4.over && !G4.endPlayed) {
     G4.endPlayed = true;
     setTimeout(() => sfx(G4.over.draw ? 'draw' : (G4.mode === 'local' || G4.over.order[0] === G4.me) ? 'win' : 'lose'), grew ? 280 : 0);
+    bumpDailyStreak();
   }
 }
 
