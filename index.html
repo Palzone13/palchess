@@ -111,6 +111,20 @@ label input{margin-top:6px}
 .leaders .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .code-row input{max-width:150px;text-transform:uppercase;letter-spacing:.12em;font-weight:700}
 
+/* Kung Fu Chess */
+#view-kfc{--bs:max(280px,min(calc(100vw - 32px),calc(100vh - 210px),680px))}
+.kpieces{position:absolute;inset:0;pointer-events:none;z-index:4}
+.kp{position:absolute;left:0;top:0;width:12.5%;height:12.5%;display:flex;align-items:center;justify-content:center;transition:transform var(--kdur,.3s) linear,opacity .25s;will-change:transform}
+.kp.moving{z-index:6}
+.kp.cool{opacity:.78}
+.kp.dead{opacity:0;transform-origin:center}
+.kp .kcd{position:absolute;left:10%;right:10%;bottom:6%;height:calc(var(--cd,0) * 14%);min-height:0;background:#f2b83c;border-radius:3px;opacity:.9;pointer-events:none}
+.kp .kcd.on{min-height:4px}
+#kboard .sq.ksel{box-shadow:inset 0 0 0 4px var(--gold)}
+#kboard .sq.ksel2{box-shadow:inset 0 0 0 4px #62b5ff}
+#kboard .sq.klast::before{content:"";position:absolute;inset:0;background:rgba(242,184,60,.28)}
+.ksetup .seg{margin-bottom:4px}
+
 /* game */
 #view-game{--bs:max(280px,min(calc(100vw - 32px),calc(100vh - 210px),680px))}
 .game{display:flex;flex-wrap:wrap;gap:32px;justify-content:center;align-items:flex-start;padding:20px 16px 48px}
@@ -466,6 +480,32 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
             </div>
           </div>
 
+          <div class="acc" id="acc-kfc">
+            <button class="acc-h" type="button" aria-expanded="false" aria-controls="accb-kfc">
+              <span class="acc-t"><b>Kung Fu Chess</b><small>No turns. Move any ready piece, any time</small></span><span class="chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc-b" id="accb-kfc" hidden>
+              <div class="ctl">
+                <span class="lbl">Opponent</span>
+                <div class="seg" id="seg-kfc-mode" data-val="bot"><button type="button" data-v="bot" class="on">Computer</button><button type="button" data-v="local">Two players, one screen</button></div>
+              </div>
+              <div class="ctl" id="kfc-bot-opts">
+                <span class="lbl">Computer speed and skill</span>
+                <div class="seg" id="seg-kfc-lvl" data-val="2"><button type="button" data-v="1">Easy</button><button type="button" data-v="2" class="on">Medium</button><button type="button" data-v="3">Hard</button><button type="button" data-v="4">Insane</button></div>
+              </div>
+              <div class="ctl" id="kfc-col-opts">
+                <span class="lbl">Your colour</span>
+                <div class="seg" id="seg-kfc-col" data-val="w"><button type="button" data-v="w" class="on">White</button><button type="button" data-v="b">Black</button></div>
+              </div>
+              <div class="ctl">
+                <span class="lbl">Cooldown after each move</span>
+                <div class="seg" id="seg-kfc-cd" data-val="5"><button type="button" data-v="2">2 s</button><button type="button" data-v="5" class="on">5 s</button><button type="button" data-v="10">10 s</button></div>
+              </div>
+              <div class="ctl"><button class="btn primary" id="start-kfc" type="button">Start Kung Fu Chess</button></div>
+              <p class="muted small" style="margin:12px 0 0">Practice mode, not rated. In two-player mode, click your own pieces: White and Black each keep their own selection.</p>
+            </div>
+          </div>
+
           <button class="acc-link" id="open-setup" type="button">
             <span class="acc-t"><b>Setup position</b><small>Arrange pieces, move them freely, and draw arrows</small></span><span class="chev-r" aria-hidden="true"></span>
           </button>
@@ -515,6 +555,26 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
         <ol class="moves" id="moves4" aria-label="Moves"></ol>
         <div class="controls" id="controls4"></div>
         <div class="adslot" id="ad-game4"><div class="adlabel">Advertisement</div><div class="adbody"></div></div>
+      </aside>
+    </div>
+  </section>
+  <!-- Kung Fu Chess -->
+  <section id="view-kfc" class="hidden">
+    <div class="game">
+      <div class="board-wrap">
+        <div class="pbar" id="kpbar-top"></div>
+        <div class="board" id="kboard" aria-label="Kung Fu Chess board"><div class="kpieces" id="kpieces"></div></div>
+        <div class="pbar" id="kpbar-bot"></div>
+      </div>
+      <aside class="side">
+        <div class="status" id="kstatus" role="status" aria-live="polite"></div>
+        <ol class="rules">
+          <li>There are no turns. Any piece that is not cooling down can move at any moment.</li>
+          <li>After a piece lands it must wait out its cooldown (the gold bar).</li>
+          <li>Moving pieces take time to travel. Capture the enemy king to win.</li>
+          <li>No check or castling. Pawns promote to queens.</li>
+        </ol>
+        <div class="controls" id="kcontrols"></div>
       </aside>
     </div>
   </section>
@@ -818,7 +878,8 @@ const PC = {}; // profile cache
 
 function showView(name) {
   if (name !== 'game') closeAdminMenu();
-  ['auth', 'lobby', 'game', 'game4', 'setup'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
+  if (name !== 'kfc') kfcStop();
+  ['auth', 'lobby', 'game', 'game4', 'kfc', 'setup'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
   if (name === 'lobby' || name === 'game' || name === 'game4') ensureAd(name);
   const ab = $('btn-admin');
   if (ab) { ab.classList.toggle('hidden', !(name === 'game' && isPalAdmin())); if (name !== 'game') closeAdminMenu(); }
@@ -1005,15 +1066,41 @@ function closeAdminMenu() {
   if (b) b.setAttribute('aria-expanded', 'false');
 }
 
-function adminBestMove() {
-  if (!S.game || S.mode === 'local' && !S.profile) return null;
-  const palColor = S.mode === 'online'
-    ? (S.online.row.white_id === S.user.id && isPalAdmin() ? 'w' : S.online.row.black_id === S.user.id && isPalAdmin() ? 'b' : null)
-    : (S.mode === 'ai' ? S.color : null);
+// Which side the PAL account is playing right now, or null
+function adminColor() {
+  if (!S.game || !isPalAdmin()) return null;
+  if (S.mode === 'online') {
+    if (!S.online) return null;
+    return S.online.row.white_id === S.user.id ? 'w' : S.online.row.black_id === S.user.id ? 'b' : null;
+  }
+  return S.mode === 'ai' ? S.color : null;
+}
+
+// PAL Admin: the strongest move available. Stockfish at Skill Level 20 (its maximum) with a long search; if the
+// engine cannot be loaded, the built-in engine at its top setting is the fallback.
+async function adminBestMove() {
+  const palColor = adminColor();
   if (!palColor || S.game.turn() !== palColor || S.over) return null;
-  const g = new Chess(S.game.fen());
-  const move = pickBotMove(g, 2400, 3, 700);
-  return move ? {san: move.san, from: move.from, to: move.to, promotion: move.promotion || null, color: palColor, fen: S.game.fen()} : null;
+  const g = new Chess(S.game.fen()), fen = S.game.fen(), ms = S.adminMs || 6000;
+  let move = null, info = null, engine = 'Stockfish';
+  try {
+    move = await stockfishMove(g, 20, ms, {wait: true, hash: 64});
+    if (move) info = move.info;
+  } catch (e) {
+    engine = 'Built-in engine';
+    move = pickBotMove(g, 2800, 4, 1500);
+  }
+  if (!move) return null;
+  if (S.game.fen() !== fen) return null;           // the position changed while thinking
+  return {san: move.san, from: move.from, to: move.to, promotion: move.promotion || null, color: palColor, fen, engine, info};
+}
+
+function adminEvalText(info) {
+  if (!info) return '';
+  if (info.mate != null) return 'Mate in ' + Math.abs(info.mate);
+  if (info.cp == null) return '';
+  const v = info.cp / 100;
+  return (v > 0 ? '+' : '') + v.toFixed(2);
 }
 
 // The board arrow for the admin menu: any game where it's PAL's move on the visible board
@@ -1051,21 +1138,29 @@ function showAdminMenu() {
   S.adminOpen = true;
   $('btn-admin').setAttribute('aria-expanded','true');
   $('admin-close').onclick = closeAdminMenu;
-  $('admin-best').onclick = () => {
-    const box = $('admin-analysis');
-    box.innerHTML = '<div class="admin-meta">Analyzing position…</div>';
-    setTimeout(() => {
-      const m = adminBestMove();
-      if (!m) {
-        box.innerHTML = '<div class="admin-meta">It is not PAL\'s turn, there is no active match, or the game is over.</div>';
-        return;
-      }
-      S.adminSuggestion = m;
-      const arrow = adminArrowAllowed();
-      drawAdminArrow();
-      box.innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div>${arrow ? '<div class="admin-meta">The arrow on the board shows the move.</div>' : '<div class="admin-meta">The arrow is not shown here (not a game, or not the PAL account\'s move).</div>'}`;
-    }, 30);
+  let running = false;
+  $('admin-best').onclick = async () => {
+    if (running) return;
+    running = true;
+    const btn = $('admin-best'), box = $('admin-analysis');
+    btn.disabled = true;
+    box.innerHTML = '<div class="admin-meta">Stockfish is thinking (about ' + Math.round((S.adminMs || 6000) / 1000) + ' seconds)…</div>';
+    let m = null;
+    try { m = await adminBestMove(); } catch (e) { m = null; }
+    running = false;
+    if (!S.adminOpen || !$('admin-analysis')) return;
+    $('admin-best').disabled = false;
+    if (!m) {
+      $('admin-analysis').innerHTML = '<div class="admin-meta">It is not PAL\'s turn, there is no active match, or the game is over.</div>';
+      return;
+    }
+    S.adminSuggestion = m;
+    const arrow = adminArrowAllowed();
+    drawAdminArrow();
+    const ev = adminEvalText(m.info);
+    $('admin-analysis').innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div><div class="admin-meta">${esc(m.engine)}${m.info && m.info.depth ? ' · depth ' + m.info.depth : ''}${ev ? ' · eval ' + esc(ev) : ''}</div>${arrow ? '<div class="admin-meta">The arrow on the board shows the move.</div>' : ''}`;
   };
+  if (!SF.worker) loadStockfish().catch(() => {});      // warm the engine up when the panel opens
 }
 
 function renderUserBox() {
@@ -1415,6 +1510,7 @@ async function cancelGame(id) {
 /* ═════════════ Online games ═════════════ */
 function teardownOnline() {
   S.premove = null;
+  kfcStop();
   teardown4();
   endReview();
   S.sfxPly = -1; S.endPlayed = null; S.lowSec = 0;   // next game starts silent until something happens
@@ -3145,33 +3241,57 @@ function canInteract() {
 
 function ownsPiece(p) { return p.color === S.game.turn() && (S.mode === 'local' || p.color === S.color); }
 
-function premovePosition() {
-  if (!S.game || S.mode !== 'online') return null;
-  const parts = S.game.fen().split(' ');
-  parts[1] = S.color; // generate legal-looking destinations for our pieces before our turn
-  try { return new Chess(parts.join(' ')); } catch (e) { return null; }
+// A premove can be made while it is the opponent's turn, against a person online or against a bot.
+function premoveWaiting() {
+  if (!S.game || S.over || S.review) return false;
+  if (S.mode === 'online') return !!S.online && S.online.row.status === 'active' && S.game.turn() !== S.color;
+  if (S.mode === 'ai') return S.game.turn() !== S.color;
+  return false;
+}
+
+// Where a piece could go on a premove. Like Lichess, this ignores blocking pieces and checks, because the board
+// will have changed by the time the move is played; it is checked for real when it is executed.
+function premoveTargets(sq) {
+  const p = S.game.get(sq);
+  if (!p || p.color !== S.color) return [];
+  const f0 = FILES.indexOf(sq[0]), r0 = +sq[1] - 1, out = [];
+  const add = (f, r) => {
+    if (f < 0 || f > 7 || r < 0 || r > 7 || (f === f0 && r === r0)) return;
+    out.push(FILES[f] + (r + 1));
+  };
+  const slide = dirs => dirs.forEach(([df, dr]) => { for (let k = 1; k < 8; k++) add(f0 + df * k, r0 + dr * k); });
+  const D = [[1, 1], [1, -1], [-1, 1], [-1, -1]], O = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  if (p.type === 'n') [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]].forEach(([a, b]) => add(f0 + a, r0 + b));
+  else if (p.type === 'b') slide(D);
+  else if (p.type === 'r') slide(O);
+  else if (p.type === 'q') slide(D.concat(O));
+  else if (p.type === 'k') {
+    D.concat(O).forEach(([a, b]) => add(f0 + a, r0 + b));
+    if (f0 === 4 && r0 === (p.color === 'w' ? 0 : 7)) { add(6, r0); add(2, r0); }   // castling
+  } else if (p.type === 'p') {
+    const dir = p.color === 'w' ? 1 : -1;
+    add(f0, r0 + dir);
+    if (r0 === (p.color === 'w' ? 1 : 6)) add(f0, r0 + 2 * dir);
+    add(f0 - 1, r0 + dir); add(f0 + 1, r0 + dir);                                  // captures
+  }
+  return out;
 }
 
 function onSquare(sq) {
   if (!S.game || S.over || S.review) return;
-  const waitingPremove = S.mode === 'online' && S.online && S.online.row.status === 'active' && S.game.turn() !== S.color;
-  if (waitingPremove) {
-    if (S.sel && S.targets.includes(sq)) {
-      S.premove = {from: S.sel, to: sq, promotion: 'q'};
-      clearSel(); render();
-      toast(`Premove queued: ${S.premove.from} → ${S.premove.to}.`);
-      return;
-    }
+  if (premoveWaiting()) {
+    if (S.sel && S.targets.includes(sq)) return queuePremove(S.sel, sq);
     const p = S.game.get(sq);
     if (p && p.color === S.color) {
       if (S.sel === sq) clearSel();
-      else {
-        const pg = premovePosition();
-        S.sel = sq;
-        S.targets = pg ? pg.moves({square: sq, verbose: true}).map(m => m.to) : [];
-      }
-    } else { clearSel(); S.premove = null; }
-    paintTargets(); drawPremoveArrow();
+      else { S.sel = sq; S.targets = premoveTargets(sq); }
+      paintTargets();
+    } else {                                                  // click on an empty or enemy square: cancel
+      const had = !!S.premove;
+      clearSel(); S.premove = null;
+      if (had) render(); else paintTargets();
+      drawPremoveArrow();
+    }
     return;
   }
   if (!canInteract()) return;
@@ -3187,16 +3307,28 @@ function onSquare(sq) {
 function queuePremove(from, to, promotion) {
   S.premove = {from, to, promotion: promotion || 'q'};
   clearSel(); render();
-  toast(`Premove queued: ${from} → ${to}.`);
 }
 
-function executePremove() {
-  if (!S.premove || !S.game || !S.online || S.online.busy || S.over || S.game.turn() !== S.color) return;
+function cancelPremove() {
+  if (!S.premove && !S.sel) return;
+  S.premove = null; clearSel(); render();
+}
+
+function executePremove(tries) {
+  if (!S.premove || !S.game || S.over || S.review) return;
+  if (S.mode !== 'online' && S.mode !== 'ai') return;
+  if (S.game.turn() !== S.color) return;
+  if (S.mode === 'online' && (!S.online || S.online.row.status !== 'active')) return;
+  if (S.mode === 'online' && S.online.busy) {                       // a save is in flight: try again shortly
+    if ((tries || 0) < 25) setTimeout(() => executePremove((tries || 0) + 1), 120);
+    return;
+  }
   const pm = S.premove;
   S.premove = null;
-  const legal = S.game.moves({square: pm.from, verbose: true}).find(m => m.to === pm.to && (!m.promotion || m.promotion === (pm.promotion || 'q')));
+  const want = pm.promotion || 'q';
+  const legal = S.game.moves({square: pm.from, verbose: true}).find(m => m.to === pm.to && (!m.promotion || m.promotion === want));
   if (!legal) { render(); toast('Premove was no longer legal.', true); return; }
-  commit(pm.from, pm.to, legal.promotion || pm.promotion || 'q');
+  commit(pm.from, pm.to, legal.promotion || want);
 }
 
 function tryMove(from, to) {
@@ -3260,21 +3392,35 @@ function uciToMove(g, uci) {
   const from = uci.slice(0, 2), to = uci.slice(2, 4), pr = uci[4];
   return g.moves({verbose: true}).find(m => m.from === from && m.to === to && (!m.promotion || m.promotion === (pr || 'q'))) || null;
 }
-function stockfishMove(g, skill, ms) {
-  return loadStockfish().then(w => new Promise((res, rej) => {
+function stockfishMove(g, skill, ms, opts) {
+  opts = opts || {};
+  return loadStockfish().then(async w => {
+    if (opts.wait) { for (let i = 0; i < 60 && SF.busy; i++) await new Promise(r => setTimeout(r, 100)); }   // let a running search finish
+    return w;
+  }).then(w => new Promise((res, rej) => {
     if (SF.busy) return rej(new Error('engine busy'));
     SF.busy = true;
+    let info = {depth: 0, cp: null, mate: null};
     let to;
     const done = (m, err) => { clearTimeout(to); w.removeEventListener('message', on); SF.busy = false; if (err) rej(err); else res(m); };
     const on = e => {
-      const m = /^bestmove (\S+)/.exec(String(e.data));
+      const line = String(e.data);
+      if (line.indexOf('info') === 0 && / score /.test(line) && !/(lowerbound|upperbound)/.test(line)) {      // keep the latest evaluation for the admin panel
+        const d = /depth (\d+)/.exec(line), c = /score cp (-?\d+)/.exec(line), mt = /score mate (-?\d+)/.exec(line);
+        if (d) info.depth = +d[1];
+        if (c) { info.cp = +c[1]; info.mate = null; }
+        if (mt) { info.mate = +mt[1]; info.cp = null; }
+      }
+      const m = /^bestmove (\S+)/.exec(line);
       if (!m) return;
       const mv = uciToMove(g, m[1]);
+      if (mv) mv.info = info;
       done(mv, mv ? null : new Error('engine gave an unusable move'));
     };
     to = setTimeout(() => { w.postMessage('stop'); done(null, new Error('engine timed out')); }, ms + 6000);
     w.addEventListener('message', on);
     w.postMessage('setoption name Skill Level value ' + skill);
+    w.postMessage('setoption name Hash value ' + (opts.hash || 16));
     w.postMessage('position fen ' + g.fen());
     w.postMessage('go movetime ' + Math.max(50, Math.round(ms)));
   }));
@@ -3304,6 +3450,7 @@ function aiMove() {
       if (end && S.botMatchId) settleBot(end.result);
     }
     render();
+    if (S.premove && !S.over) setTimeout(executePremove, 0);
   };
   setTimeout(async () => {                             // a beat first, so the "thinking" state paints
     if (S.game !== g || S.mode !== 'ai' || S.over) return play(null);
@@ -3360,7 +3507,7 @@ function renderBoard(g) {
   const an = S.review && S.review.ply > 0 && S.review.analysis ? S.review.analysis[S.review.ply] : null;
   const brd = g.board();
   const chk = g.in_check() ? findKing(brd, g.turn()) : null;
-  const can = canInteract();
+  const can = canInteract(), waiting = premoveWaiting();
   let html = '';
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
@@ -3378,7 +3525,7 @@ function renderBoard(g) {
       if (c === 0) inner += `<i class="co rk">${rk + 1}</i>`;
       if (r === 7) inner += `<i class="co fl">${FILES[f]}</i>`;
       if (an && last && sq === last.to) inner += `<span class="sq-badge ${an.cls}" title="${esc(an.label)}. Best move: ${esc(an.best || '-')}" aria-label="${esc(an.label)}">${an.emoji}</span>`;
-      if (p) inner += `<span class="pc ${p.color}"${can && ownsPiece(p) ? ' draggable="true"' : ''}>${GLYPH[p.type]}</span>`;
+      if (p) inner += `<span class="pc ${p.color}"${(can && ownsPiece(p)) || (waiting && p.color === S.color) ? ' draggable="true"' : ''}>${GLYPH[p.type]}</span>`;
       html += `<div class="${cls}" data-sq="${sq}">${inner}</div>`;
     }
   }
@@ -3421,9 +3568,10 @@ function bindBoard() {
   b.addEventListener('dragstart', e => {
     const s = e.target.closest('.sq');
     const p = s && S.game ? S.game.get(s.dataset.sq) : null;
-    if (!s || !p || !canInteract() || !ownsPiece(p)) { e.preventDefault(); return; }
+    const pre = premoveWaiting();
+    if (!s || !p || !(pre ? p.color === S.color : canInteract() && ownsPiece(p))) { e.preventDefault(); return; }
     S.sel = s.dataset.sq;
-    S.targets = S.game.moves({square: S.sel, verbose: true}).map(m => m.to);
+    S.targets = pre ? premoveTargets(S.sel) : S.game.moves({square: S.sel, verbose: true}).map(m => m.to);
     e.dataTransfer.setData('text/plain', S.sel);
     e.dataTransfer.effectAllowed = 'move';
     paintTargets();
@@ -3434,9 +3582,340 @@ function bindBoard() {
     const s = e.target.closest('.sq');
     if (!s || !S.sel) return;
     const from = S.sel, to = s.dataset.sq;
-    if (S.targets.includes(to)) tryMove(from, to); else { clearSel(); render(); }
+    if (!S.targets.includes(to)) { clearSel(); render(); return; }
+    if (premoveWaiting()) queuePremove(from, to); else tryMove(from, to);
   });
+  b.addEventListener('contextmenu', e => { if (S.premove || S.sel) { e.preventDefault(); cancelPremove(); } });   // right-click cancels a premove
   b.addEventListener('dragend', () => { if (S.sel) { clearSel(); render(); } });
+}
+
+
+/* ═════════════ Kung Fu Chess ═════════════
+   Real-time chess. There are no turns: every piece that is not cooling down may move at any moment. A move takes
+   time to travel, and the piece then has to rest for the cooldown. Captures happen on arrival, the king is
+   capturable, and there is no check, castling or en passant. Pawns promote to queens. */
+const KFC = {on: false, pieces: [], grid: [], els: {}, sel: {w: null, b: null}, active: 'w', over: null, tick: null, botT: null, nextId: 1, lastSig: ''};
+const KVAL = {p: 1, n: 3, b: 3, r: 5, q: 9, k: 1000};
+const KLVL = {1: {lo: 2200, hi: 3600, noise: 7, look: false}, 2: {lo: 1100, hi: 2000, noise: 3.5, look: true}, 3: {lo: 550, hi: 1100, noise: 1.2, look: true}, 4: {lo: 250, hi: 520, noise: 0.35, look: true}};
+
+function kfcStop() {
+  if (!KFC.on && !KFC.tick) return;
+  KFC.on = false;
+  clearInterval(KFC.tick); KFC.tick = null; clearTimeout(KFC.botT); KFC.botT = null;
+}
+
+function kfcStart(mode, level, cdSec, color) {
+  teardownOnline();
+  S.mode = 'kfc'; S.game = null; S.over = null; S.review = null; clearSel();
+  KFC.on = true; KFC.mode = mode; KFC.level = level; KFC.cd = cdSec * 1000;
+  KFC.human = mode === 'bot' ? color : null;                 // null: both sides are human
+  KFC.flip = mode === 'bot' && color === 'b';
+  KFC.sel = {w: null, b: null}; KFC.active = color || 'w'; KFC.over = null; KFC.nextId = 1; KFC.last = null; KFC.lastSig = ''; KFC.caps = {w: [], b: []};
+  KFC.pieces = []; KFC.grid = Array.from({length: 8}, () => Array(8).fill(null)); KFC.els = {};
+  const back = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+  for (let x = 0; x < 8; x++) {
+    kfcAdd(back[x], 'w', x, 0); kfcAdd('p', 'w', x, 1);
+    kfcAdd('p', 'b', x, 6); kfcAdd(back[x], 'b', x, 7);
+  }
+  const now = Date.now();
+  KFC.pieces.forEach(q => { q.ready = now + 1500; });         // a short moment to look at the board before the fight
+  showView('kfc');
+  kfcBuildBoard(); kfcRenderPieces(); kfcBar(); kfcStatus(); kfcControls();
+  clearInterval(KFC.tick); KFC.tick = setInterval(kfcLoop, 40);
+  if (mode === 'bot') kfcScheduleBot(1500);
+}
+function kfcAdd(t, c, x, y) {
+  const q = {id: KFC.nextId++, t, c, x, y, ready: 0, mv: null, dead: false};
+  KFC.pieces.push(q); KFC.grid[y][x] = q;
+}
+
+function kfcBuildBoard() {
+  const b = $('kboard'), layer = $('kpieces');
+  let h = '';
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const x = KFC.flip ? 7 - c : c, y = KFC.flip ? r : 7 - r;
+    h += `<div class="sq ${(x + y) % 2 === 0 ? 'dark' : 'light'}" data-x="${x}" data-y="${y}">${c === 0 ? `<i class="co rk">${y + 1}</i>` : ''}${r === 7 ? `<i class="co fl">${FILES[x]}</i>` : ''}</div>`;
+  }
+  b.innerHTML = h; b.appendChild(layer); layer.innerHTML = '';
+  KFC.els = {};
+}
+const kfcPos = (x, y) => `translate(${(KFC.flip ? 7 - x : x) * 100}%,${(KFC.flip ? y : 7 - y) * 100}%)`;
+
+function kfcRenderPieces() {
+  const layer = $('kpieces');
+  KFC.pieces.forEach(q => {
+    let el = KFC.els[q.id];
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'kp pc ' + q.c;
+      el.innerHTML = '<span class="kg"></span><span class="kcd"></span>';
+      el.style.transition = 'none'; el.style.transform = kfcPos(q.x, q.y);
+      layer.appendChild(el); KFC.els[q.id] = el;
+      requestAnimationFrame(() => { el.style.transition = ''; });
+    }
+    el.firstChild.textContent = GLYPH[q.t];
+  });
+}
+
+// Pseudo-legal destinations. mode 'attack' also lists squares the piece defends and a pawn's diagonals.
+function kfcGen(q, mode) {
+  const out = [], G = KFC.grid, atk = mode === 'attack';
+  const push = (x, y) => {
+    if (x < 0 || x > 7 || y < 0 || y > 7) return false;
+    const o = G[y][x];
+    if (!o) { out.push([x, y]); return true; }
+    if (o.c !== q.c || atk) out.push([x, y]);
+    return false;
+  };
+  const slide = ds => ds.forEach(([dx, dy]) => { for (let k = 1; k < 8; k++) if (!push(q.x + dx * k, q.y + dy * k)) break; });
+  const D = [[1, 1], [1, -1], [-1, 1], [-1, -1]], O = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  if (q.t === 'n') [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]].forEach(([a, b]) => push(q.x + a, q.y + b));
+  else if (q.t === 'b') slide(D);
+  else if (q.t === 'r') slide(O);
+  else if (q.t === 'q') slide(D.concat(O));
+  else if (q.t === 'k') D.concat(O).forEach(([a, b]) => push(q.x + a, q.y + b));
+  else {
+    const dir = q.c === 'w' ? 1 : -1;
+    for (const dx of [-1, 1]) {
+      const x = q.x + dx, y = q.y + dir;
+      if (x < 0 || x > 7 || y < 0 || y > 7) continue;
+      const o = KFC.grid[y][x];
+      if (atk ? true : (o && o.c !== q.c)) out.push([x, y]);
+    }
+    if (!atk) {
+      const y1 = q.y + dir;
+      if (y1 >= 0 && y1 <= 7 && !G[y1][q.x]) {
+        out.push([q.x, y1]);
+        const y2 = q.y + 2 * dir;
+        if (q.y === (q.c === 'w' ? 1 : 6) && !G[y2][q.x]) out.push([q.x, y2]);
+      }
+    }
+  }
+  return out;
+}
+const kfcReady = (q, now) => !q.dead && !q.mv && (now || Date.now()) >= q.ready;
+
+function kfcMove(q, tx, ty) {
+  const now = Date.now();
+  if (!KFC.on || KFC.over || !kfcReady(q, now)) return false;
+  if (!kfcGen(q, 'move').some(m => m[0] === tx && m[1] === ty)) return false;
+  const dist = q.t === 'n' ? 2 : Math.max(Math.abs(tx - q.x), Math.abs(ty - q.y));
+  const dur = Math.max(260, dist * 230);
+  q.mv = {fx: q.x, fy: q.y, tx, ty, arr: now + dur};
+  const el = KFC.els[q.id];
+  el.classList.add('moving');
+  el.style.setProperty('--kdur', dur + 'ms');
+  el.style.transform = kfcPos(tx, ty);
+  sfx('move');
+  return true;
+}
+
+// Called when a piece's travel time is over
+function kfcLand(q) {
+  const m = q.mv, now = Date.now(), el = KFC.els[q.id];
+  q.mv = null;
+  if (el) el.classList.remove('moving');
+  const back = () => {                                          // the move fizzles: back to where it started
+    if (el) { el.style.setProperty('--kdur', '180ms'); el.style.transform = kfcPos(q.x, q.y); }
+    q.ready = now + KFC.cd * 0.25;
+  };
+  const target = KFC.grid[m.ty][m.tx];
+  // squares in between must still be empty for sliders and double pawn steps
+  const sx = Math.sign(m.tx - m.fx), sy = Math.sign(m.ty - m.fy);
+  if (q.t !== 'n') {
+    for (let x = m.fx + sx, y = m.fy + sy; (x !== m.tx || y !== m.ty) && x >= 0 && x <= 7 && y >= 0 && y <= 7; x += sx, y += sy) {
+      if (KFC.grid[y][x]) return back();
+    }
+  }
+  if (target && target.c === q.c) return back();
+  if (q.t === 'p') {
+    const diag = m.tx !== m.fx;
+    if (diag && !target) return back();
+    if (!diag && target) return back();
+  }
+  KFC.grid[m.fy][m.fx] = null;
+  if (target) kfcKill(target, q);
+  KFC.grid[m.ty][m.tx] = q; q.x = m.tx; q.y = m.ty;
+  if (el) el.style.transform = kfcPos(m.tx, m.ty);
+  q.ready = now + KFC.cd;
+  KFC.last = {from: [m.fx, m.fy], to: [m.tx, m.ty]};
+  if (q.t === 'p' && (q.y === 7 || q.y === 0)) { q.t = 'q'; if (el) el.firstChild.textContent = GLYPH.q; sfx('promote'); }
+  else if (target) sfx('capture');
+  if (target && target.t === 'k') kfcEnd(q.c);
+  else kfcCheckDraw();
+  KFC.lastSig = '';
+  kfcBar();
+}
+function kfcKill(v, by) {
+  v.dead = true; v.mv = null;
+  KFC.caps[by.c].push(v.t);
+  if (KFC.grid[v.y][v.x] === v) KFC.grid[v.y][v.x] = null;
+  KFC.pieces = KFC.pieces.filter(z => z !== v);
+  KFC.sel.w = KFC.sel.w === v.id ? null : KFC.sel.w; KFC.sel.b = KFC.sel.b === v.id ? null : KFC.sel.b;
+  const el = KFC.els[v.id];
+  if (el) { el.classList.add('dead'); setTimeout(() => el.remove(), 300); delete KFC.els[v.id]; }
+}
+function kfcEnd(winner) {
+  KFC.over = {winner};
+  KFC.pieces.forEach(q => { if (q.mv) { q.mv = null; } });
+  clearTimeout(KFC.botT);
+  const mine = KFC.human == null || KFC.human === winner;
+  sfx(KFC.human == null ? 'win' : (mine ? 'win' : 'lose'));
+  kfcStatus(); kfcControls();
+}
+function kfcCheckDraw() {
+  if (KFC.over) return;
+  if (KFC.pieces.every(q => q.t === 'k')) {
+    KFC.over = {winner: null}; clearTimeout(KFC.botT); sfx('draw'); kfcStatus(); kfcControls();
+  }
+}
+
+function kfcLoop() {
+  if (!KFC.on) return;
+  const now = Date.now();
+  KFC.pieces.slice().forEach(q => { if (q.mv && now >= q.mv.arr && !KFC.over) kfcLand(q); });
+  // cooldown bars
+  KFC.pieces.forEach(q => {
+    const el = KFC.els[q.id]; if (!el) return;
+    const left = q.ready - now, cool = left > 0 && !q.mv;
+    el.classList.toggle('cool', cool);
+    const bar = el.lastChild;
+    bar.classList.toggle('on', cool);
+    el.style.setProperty('--cd', cool ? Math.min(1, left / KFC.cd) * 5 : 0);
+  });
+  kfcPaintSel(now);
+}
+
+// highlight the selected pieces and where they can go
+function kfcPaintSel(now) {
+  const cols = ['w', 'b'], parts = [];
+  cols.forEach(c => {
+    const q = KFC.pieces.find(z => z.id === KFC.sel[c]);
+    parts.push(q ? q.id + ':' + q.x + q.y + ':' + (kfcReady(q, now) ? 1 : 0) + ':' + (q.mv ? 1 : 0) : '-');
+  });
+  parts.push(KFC.last ? KFC.last.from + '' + KFC.last.to : '');
+  parts.push(KFC.pieces.length);
+  const sig = parts.join('|') + '|' + KFC.pieces.map(q => q.x + '' + q.y).join(',').length;
+  if (sig === KFC.lastSig) return;
+  KFC.lastSig = sig;
+  const sqs = $('kboard').querySelectorAll('.sq');
+  sqs.forEach(el => { el.classList.remove('ksel', 'ksel2', 'klast', 'target', 'cap'); });
+  const at = (x, y) => $('kboard').querySelector(`.sq[data-x="${x}"][data-y="${y}"]`);
+  if (KFC.last) { at(...KFC.last.from).classList.add('klast'); at(...KFC.last.to).classList.add('klast'); }
+  cols.forEach(c => {
+    const q = KFC.pieces.find(z => z.id === KFC.sel[c]);
+    if (!q) return;
+    at(q.x, q.y).classList.add(c === 'w' || KFC.mode === 'bot' ? 'ksel' : 'ksel2');
+    if (kfcReady(q, now)) kfcGen(q, 'move').forEach(([x, y]) => { const el = at(x, y); el.classList.add('target'); if (KFC.grid[y][x]) el.classList.add('cap'); });
+  });
+}
+
+function kfcClick(x, y) {
+  if (!KFC.on || KFC.over) return;
+  const clicked = KFC.grid[y][x], now = Date.now();
+  const controllable = c => KFC.human == null || KFC.human === c;
+  // first: does this square complete a move for a selected piece?
+  const order = [KFC.active, KFC.active === 'w' ? 'b' : 'w'];
+  for (const c of order) {
+    if (!controllable(c)) continue;
+    const q = KFC.pieces.find(z => z.id === KFC.sel[c]);
+    if (!q || !kfcReady(q, now)) continue;
+    if (clicked && clicked.c === c) continue;                 // clicking another of your own pieces re-selects instead
+    if (kfcMove(q, x, y)) { KFC.sel[c] = null; KFC.lastSig = ''; return; }
+  }
+  if (clicked && controllable(clicked.c)) {
+    KFC.active = clicked.c;
+    KFC.sel[clicked.c] = KFC.sel[clicked.c] === clicked.id ? null : clicked.id;
+  } else {
+    KFC.sel[KFC.active] = null;
+  }
+  KFC.lastSig = '';
+  kfcPaintSel(now);
+}
+
+/* ---- the computer ---- */
+function kfcAttackers(x, y, color, soonMs) {
+  const now = Date.now(), res = [];
+  KFC.pieces.forEach(q => {
+    if (q.c !== color || q.dead) return;
+    const wait = q.mv ? 0 : Math.max(0, q.ready - now);
+    if (wait > (soonMs || 0)) return;
+    if (kfcGen(q, 'attack').some(m => m[0] === x && m[1] === y)) res.push(q);
+  });
+  return res;
+}
+function kfcScheduleBot(first) {
+  clearTimeout(KFC.botT);
+  if (!KFC.on || KFC.over || KFC.mode !== 'bot') return;
+  const L = KLVL[KFC.level] || KLVL[2];
+  KFC.botT = setTimeout(() => { kfcBotThink(); kfcScheduleBot(); }, first || (L.lo + Math.random() * (L.hi - L.lo)));
+}
+function kfcBotThink() {
+  if (!KFC.on || KFC.over) return;
+  const L = KLVL[KFC.level] || KLVL[2], bot = KFC.human === 'w' ? 'b' : 'w', foe = KFC.human, now = Date.now();
+  let best = null, bestScore = -Infinity;
+  KFC.pieces.forEach(q => {
+    if (q.c !== bot || !kfcReady(q, now)) return;
+    const hereThreat = L.look ? kfcAttackers(q.x, q.y, foe, 300).length : 0;
+    const hereDefended = L.look ? kfcAttackers(q.x, q.y, bot, 1500).filter(z => z !== q).length : 0;
+    const dirv = bot === 'w' ? 1 : -1;
+    kfcGen(q, 'move').forEach(([x, y]) => {
+      const v = KFC.grid[y][x];
+      let sc = v ? KVAL[v.t] * 10 : 0;
+      if (v && v.t === 'k') sc += 5000;
+      if (L.look) {
+        const att = kfcAttackers(x, y, foe, 900);
+        const def = kfcAttackers(x, y, bot, 1500).filter(z => z !== q).length;
+        if (att.length) sc -= KVAL[q.t] * (def ? 4 : 9) * (v ? 0.6 : 1);
+        if (hereThreat) sc += KVAL[q.t] * (hereDefended ? 3 : 7);       // get out of the way
+        if (q.t === 'k') sc -= att.length ? 40 : 0;
+      }
+      if (q.t === 'p') sc += 0.6 + (y - q.y) * dirv * 0.2 + (bot === 'w' ? y : 7 - y) * 0.12;
+      else if (q.t !== 'k') sc += 0.35 - (Math.abs(3.5 - x) + Math.abs(3.5 - y)) * 0.06;
+      if (q.t === 'k') sc -= 0.8;
+      sc += Math.random() * L.noise;
+      if (sc > bestScore) { bestScore = sc; best = [q, x, y]; }
+    });
+  });
+  if (best && (bestScore > -2 || Math.random() < 0.15)) kfcMove(best[0], best[1], best[2]);
+}
+
+/* ---- sidebar bits ---- */
+function kfcName(c) { return KFC.mode === 'local' ? (c === 'w' ? 'White' : 'Black') : (c === KFC.human ? (S.profile ? S.profile.username : 'You') : 'Computer'); }
+function kfcBar() {
+  const draw = (id, c) => {
+    const caps = KFC.caps[c].slice().sort((a, b) => KVAL[b] - KVAL[a]).map(t => `<span class="cp ${c === 'w' ? 'b' : 'w'}">${GLYPH[t]}</span>`).join('');
+    $(id).innerHTML = `<span class="dot"></span><span>${esc(kfcName(c))}</span><span class="caps">${caps}</span>`;
+  };
+  const bot = KFC.flip ? 'w' : 'b', top = bot;
+  draw('kpbar-top', top); draw('kpbar-bot', top === 'w' ? 'b' : 'w');
+}
+function kfcStatus() {
+  const el = $('kstatus');
+  if (!KFC.over) { el.textContent = KFC.mode === 'local' ? 'Both sides move at once. Go!' : 'Move any piece that is ready. Go!'; return; }
+  const w = KFC.over.winner;
+  el.textContent = w == null ? 'Draw. Only kings are left.' : (KFC.human == null ? (w === 'w' ? 'White' : 'Black') + ' wins by capturing the king.' : (w === KFC.human ? 'You win. The enemy king has fallen.' : 'You lose. Your king was captured.'));
+}
+function kfcControls() {
+  const box = $('kcontrols');
+  box.innerHTML = '';
+  const add = (label, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = fn; box.appendChild(b); };
+  add(KFC.over ? 'Play again' : 'Restart', () => kfcStart(KFC.mode, KFC.level, KFC.cd / 1000, KFC.human || 'w'), KFC.over ? 'primary' : '');
+  add('Flip board', () => { KFC.flip = !KFC.flip; kfcBuildBoard(); kfcRenderPieces(); KFC.lastSig = ''; kfcBar(); });
+  add('Leave', leaveKfc, 'danger');
+}
+function leaveKfc() { kfcStop(); S.mode = null; if (S.user || S.guest) goLobby(); else showView('auth'); }
+
+function bindKfc() {
+  initSeg($('seg-kfc-mode')); initSeg($('seg-kfc-lvl')); initSeg($('seg-kfc-col')); initSeg($('seg-kfc-cd'));
+  $('seg-kfc-mode').addEventListener('click', () => {
+    const bot = $('seg-kfc-mode').dataset.val === 'bot';
+    $('kfc-bot-opts').classList.toggle('hidden', !bot); $('kfc-col-opts').classList.toggle('hidden', !bot);
+  });
+  $('start-kfc').onclick = () => kfcStart($('seg-kfc-mode').dataset.val, +$('seg-kfc-lvl').dataset.val, +$('seg-kfc-cd').dataset.val, $('seg-kfc-col').dataset.val);
+  const b = $('kboard');
+  b.addEventListener('click', e => { const s = e.target.closest('.sq'); if (s) kfcClick(+s.dataset.x, +s.dataset.y); });
+  b.addEventListener('contextmenu', e => { e.preventDefault(); KFC.sel = {w: null, b: null}; KFC.lastSig = ''; kfcPaintSel(Date.now()); });
 }
 
 function playerInfo(color) {
@@ -3555,7 +4034,7 @@ function renderSide(vg) {
     return;
   }
   add('Flip board', () => { S.flip = !S.flip; render(); });
-  if (S.premove) add('Cancel premove', () => { S.premove = null; clearSel(); render(); }, 'danger');
+  if (S.premove) add('Cancel premove', cancelPremove, 'danger');
   if (S.over && total) add('Overview', startReview, 'primary');
   if (S.mode === 'ai' || S.mode === 'local') {
     const u = add('Undo', undo);
@@ -3891,7 +4370,7 @@ function bindStatic() {
   $('tab-up').onclick = () => setAuthMode('up');
   $('auth-form').addEventListener('submit', submitAuth);
   $('guest').onclick = () => { S.guest = true; renderUserBox(); goLobby(); };
-  $('brand').onclick = () => { if (S.mode) leaveGame(); else if (S.user || S.guest) goLobby(); };
+  $('brand').onclick = () => { if (S.mode === 'kfc') leaveKfc(); else if (S.mode) leaveGame(); else if (S.user || S.guest) goLobby(); };
   ['seg-color', 'seg-lb'].forEach(id => initSeg($(id)));
   $('seg-lb').addEventListener('click', () => { S.lbCol = $('seg-lb').dataset.val; loadLobbyData(); });
   $('tc-ai').innerHTML = tcSeg('seg-ai-tc', 0);
@@ -3914,7 +4393,7 @@ function bindStatic() {
     const keys = {ArrowLeft: S.review.ply - 1, ArrowRight: S.review.ply + 1, Home: 0, End: total};
     if (e.key in keys) { e.preventDefault(); stopAuto(); setPly(keys[e.key]); }
   });
-  bindBoard();
+  bindBoard(); bindKfc();
   window.addEventListener('resize', drawPremoveArrow);
   miniBoard($('mini'), 'r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4');
 }
