@@ -121,6 +121,9 @@ label input{margin-top:6px}
 .board .sq.check{background-image:radial-gradient(circle,rgba(229,100,90,.95) 0,rgba(229,100,90,.55) 45%,rgba(229,100,90,0) 72%)}
 .board .sq.target::after{content:"";position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(18,32,43,.38);z-index:3;pointer-events:none}
 .board .sq.target.cap::after{width:100%;height:100%;border-radius:0;background:none;box-shadow:inset 0 0 0 5px rgba(18,32,43,.42)}
+.board .sq.premove-from{box-shadow:inset 0 0 0 4px rgba(92,174,255,.9)}
+.board .sq.premove-to{box-shadow:inset 0 0 0 4px rgba(92,174,255,.9);background-image:radial-gradient(circle,rgba(92,174,255,.3),rgba(92,174,255,.08) 70%)}
+#premove-arrow{position:absolute;pointer-events:none;z-index:7;overflow:visible}
 .board .pc[draggable="true"]{cursor:grab}
 .co{position:absolute;font:700 clamp(9px,1.6vw,12px) var(--f-body);font-style:normal;z-index:1;pointer-events:none}
 .co.rk{top:3px;left:4px}
@@ -212,6 +215,22 @@ label input{margin-top:6px}
 .ttl.t-ex{border-color:#8fd1c2;color:#a9e0d3}
 .ttl.t-ca,.ttl.t-cb{border-color:#b7d98b;color:#c6e2a3}
 .pbar .pname .ttl{font-size:10px}
+
+/* setup position (free-form board with arrows) */
+#view-setup{--bs:max(280px,min(calc(100vw - 32px),calc(100vh - 210px),640px))}
+.sboard-wrap{position:relative;width:var(--bs)}
+.pal{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.pal button{display:flex;align-items:center;justify-content:center;min-height:42px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--sea);cursor:pointer}
+.pal button:hover{border-color:var(--gold)}
+.pal button.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(242,184,60,.45)}
+.pal .pc{font-size:28px;position:static}
+.pal .erase{grid-column:span 6;font:600 13px var(--f-body);color:var(--text);min-height:36px;background:var(--panel)}
+.fenbox{display:flex;flex-direction:column;gap:8px}
+.fenbox input{font:500 12px/1.4 ui-monospace,Menlo,Consolas,monospace}
+.sethint{font-size:13px;color:var(--muted);line-height:1.45}
+.acc-link{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;color:var(--text);cursor:pointer;text-align:left;font:inherit;transition:border-color .15s}
+.acc-link:hover{border-color:var(--gold);background:var(--panel2)}
+.chev-r{width:10px;height:10px;flex:none;margin:0 6px 0 0;border-right:2px solid var(--muted);border-top:2px solid var(--muted);transform:rotate(45deg)}
 
 /* lobby: Single / Multi / 4 Player dropdowns */
 .accs{display:flex;flex-direction:column;gap:12px}
@@ -351,6 +370,12 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
   .mact .btn{width:100%}
   .promo{flex-wrap:wrap}
 }
+@media (max-width:480px){
+  #view-setup{--bs:max(260px,min(calc(100vw - 24px),calc(100vh - 250px),640px))}
+  .sboard-wrap{margin:0 auto}
+  .acc-link{padding:14px}
+  .pal button{min-height:40px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
 </head>
@@ -440,6 +465,10 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
               <div class="block" id="p4-block"></div>
             </div>
           </div>
+
+          <button class="acc-link" id="open-setup" type="button">
+            <span class="acc-t"><b>Setup position</b><small>Arrange pieces, move them freely, and draw arrows</small></span><span class="chev-r" aria-hidden="true"></span>
+          </button>
         </div>
       </div>
       <div>
@@ -489,9 +518,28 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
       </aside>
     </div>
   </section>
+  <!-- Setup position -->
+  <section id="view-setup" class="hidden">
+    <div class="game">
+      <div class="sboard-wrap" id="sboard-wrap">
+        <div class="board" id="sboard" aria-label="Setup board"></div>
+      </div>
+      <aside class="side">
+        <div class="status" id="sstatus" role="status" aria-live="polite"></div>
+        <div class="pal" id="spal" aria-label="Piece palette"></div>
+        <div class="controls" id="scontrols"></div>
+        <div class="fenbox">
+          <div class="seg" id="sturn" aria-label="Side to move"><button type="button" data-v="w" class="on">White to move</button><button type="button" data-v="b">Black to move</button></div>
+          <input id="sfen" spellcheck="false" autocomplete="off" aria-label="FEN">
+          <div class="row" style="margin:0"><button class="btn sm" id="sfen-load" type="button">Load FEN</button><button class="btn sm ghost" id="sfen-copy" type="button">Copy FEN</button></div>
+        </div>
+        <p class="sethint">Right-click a piece to select it, then click or right-click any destination square. The piece moves there and a green arrow marks the move. On touch screens, tap a piece, then tap its destination.</p>
+      </aside>
+    </div>
+  </section>
 </main>
 
-<footer class="site-foot">&copy; PAL Labs. <a href="/privacy.html">Privacy</a></footer>
+<footer class="site-foot">&copy; PAL Labs. <a href="/articles/index.html">Learn Chess</a> &middot; <a href="/privacy.html">Privacy</a></footer>
 <div id="modal-root"></div>
 <div class="npanel hidden" id="npanel" role="dialog" aria-label="Notifications"></div>
 <div class="alerts" id="alerts" aria-live="polite"></div>
@@ -754,7 +802,7 @@ const S = {
   user: null, profile: null, guest: false,
   mode: null,            // 'ai' | 'local' | 'online'
   game: null, color: 'w', colorPref: 'w', flip: false,
-  sel: null, targets: [], last: null, over: null,
+  sel: null, targets: [], last: null, over: null, premove: null,
   aiLevel: 2, aiThinking: false,
   online: null, lobbyTimer: null,
   review: null,          // {ply, timer, analysis} while the post-game overview is open
@@ -770,7 +818,7 @@ const PC = {}; // profile cache
 
 function showView(name) {
   if (name !== 'game') closeAdminMenu();
-  ['auth', 'lobby', 'game', 'game4'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['auth', 'lobby', 'game', 'game4', 'setup'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
   if (name === 'lobby' || name === 'game' || name === 'game4') ensureAd(name);
   const ab = $('btn-admin');
   if (ab) { ab.classList.toggle('hidden', !(name === 'game' && isPalAdmin())); if (name !== 'game') closeAdminMenu(); }
@@ -1366,6 +1414,7 @@ async function cancelGame(id) {
 
 /* ═════════════ Online games ═════════════ */
 function teardownOnline() {
+  S.premove = null;
   teardown4();
   endReview();
   S.sfxPly = -1; S.endPlayed = null; S.lowSec = 0;   // next game starts silent until something happens
@@ -1410,7 +1459,8 @@ async function applyRow(row) {
   await fetchProfiles([row.white_id, row.black_id]);
   if (!S.online || S.online.row.id !== row.id) return;
   S.online.row = row;
-  if (row.moves.length !== cur.moves.length) {
+  const opponentMoveArrived = row.moves.length > cur.moves.length;
+  if (opponentMoveArrived) {
     S.game = rebuild(row.moves); syncLast(); clearSel();
   }
   if (row.status === 'finished' && !S.over) {
@@ -1418,6 +1468,9 @@ async function applyRow(row) {
     settle();
   }
   render();
+  if (opponentMoveArrived && row.status === 'active' && row.turn === S.color && S.premove) {
+    setTimeout(executePremove, 0);
+  }
   if (row.status === 'active' && row.draw_offer && row.draw_offer !== S.color && cur.draw_offer !== row.draw_offer) {
     modal('Draw offer', `<p>${esc(nameOf(S.color === 'w' ? row.black_id : row.white_id))} offers a draw.</p>`, [
       {label: 'Accept', cls: 'primary', onClick: acceptDraw},
@@ -2764,6 +2817,231 @@ async function onP4ListClick(e) {
 }
 
 
+/* ═════════════ Setup position ═════════════
+   A free-form board: no rules, no engine. Right-click (or tap) a piece to pick it up, click a square to put it
+   there, and a green arrow shows the move. Pieces can also be placed from a palette or erased. */
+const SU = {board: [], sel: null, tool: null, flip: false, arrow: null, last: null, turn: 'w', hist: [], redo: []};
+const SU_START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
+const SU_NAMES = {k: 'king', q: 'queen', r: 'rook', b: 'bishop', n: 'knight', p: 'pawn'};
+const suIdx = (x, y) => y * 8 + x;
+const suSq = i => FILES[i % 8] + (Math.floor(i / 8) + 1);
+
+function suParse(fen) {
+  const rows = String(fen || '').trim().split(/\s+/)[0].split('/');
+  if (rows.length !== 8) return null;
+  const b = new Array(64).fill(null);
+  for (let r = 0; r < 8; r++) {
+    let x = 0;
+    for (const ch of rows[r]) {
+      if (/[1-8]/.test(ch)) { x += +ch; continue; }
+      if (!/[pnbrqkPNBRQK]/.test(ch) || x > 7) return null;
+      b[suIdx(x, 7 - r)] = {t: ch.toLowerCase(), c: ch === ch.toUpperCase() ? 'w' : 'b'};
+      x++;
+    }
+    if (x !== 8) return null;
+  }
+  return b;
+}
+function suFen() {
+  const rows = [];
+  for (let r = 0; r < 8; r++) {
+    let row = '', empty = 0;
+    for (let x = 0; x < 8; x++) {
+      const p = SU.board[suIdx(x, 7 - r)];
+      if (!p) { empty++; continue; }
+      if (empty) { row += empty; empty = 0; }
+      row += p.c === 'w' ? p.t.toUpperCase() : p.t;
+    }
+    if (empty) row += empty;
+    rows.push(row);
+  }
+  const at = (x, y, t, c) => { const p = SU.board[suIdx(x, y)]; return !!p && p.t === t && p.c === c; };   // castling rights are assumed from where the king and rooks stand
+  let cs = '';
+  if (at(4, 0, 'k', 'w') && at(7, 0, 'r', 'w')) cs += 'K';
+  if (at(4, 0, 'k', 'w') && at(0, 0, 'r', 'w')) cs += 'Q';
+  if (at(4, 7, 'k', 'b') && at(7, 7, 'r', 'b')) cs += 'k';
+  if (at(4, 7, 'k', 'b') && at(0, 7, 'r', 'b')) cs += 'q';
+  return rows.join('/') + ' ' + SU.turn + ' ' + (cs || '-') + ' - 0 1';
+}
+
+const suSnap = () => ({board: SU.board.map(p => p && {...p}), arrow: SU.arrow && {...SU.arrow}, last: SU.last && {...SU.last}});
+function suPush() { SU.hist.push(suSnap()); if (SU.hist.length > 200) SU.hist.shift(); SU.redo = []; }   // call BEFORE changing the board
+function suRestore(sn) { SU.board = sn.board.map(p => p && {...p}); SU.arrow = sn.arrow; SU.last = sn.last; SU.sel = null; }
+function suUndo() { if (!SU.hist.length) return; SU.redo.push(suSnap()); suRestore(SU.hist.pop()); suRender(); }
+function suRedo() { if (!SU.redo.length) return; SU.hist.push(suSnap()); suRestore(SU.redo.pop()); suRender(); }
+
+function openSetup() {
+  Object.assign(SU, {board: suParse(SU_START), sel: null, tool: null, flip: false, arrow: null, last: null, turn: 'w', hist: [], redo: []});
+  showView('setup');
+  suRender();
+}
+function suLeave() {
+  const sv = $('sarrow'); if (sv) sv.remove();
+  if (S.user || S.guest) goLobby(); else showView('auth');
+}
+
+function suMove(from, to) {
+  if (from === to) { SU.sel = null; return suRender(); }
+  const p = SU.board[from], cap = SU.board[to];
+  if (!p) { SU.sel = null; return suRender(); }
+  suPush();
+  SU.board[to] = p; SU.board[from] = null;
+  SU.arrow = {from, to, knight: p.t === 'n'};
+  SU.last = {from, to};
+  SU.sel = null;
+  suRender(true);
+  sfx(cap ? 'capture' : 'move');
+}
+function suPick(i) {                  // right-click on a piece
+  if (!SU.board[i]) return;
+  SU.tool = null;
+  SU.sel = SU.sel === i ? null : i;
+  suRender();
+}
+function suClick(i) {                 // left click or tap on a square
+  if (SU.tool) {
+    if (SU.tool === 'x') { if (!SU.board[i]) return; suPush(); SU.board[i] = null; }
+    else {
+      const old = SU.board[i];
+      if (old && old.c === SU.tool[0] && old.t === SU.tool[1]) return;
+      suPush(); SU.board[i] = {c: SU.tool[0], t: SU.tool[1]};
+    }
+    SU.arrow = null; SU.last = null; SU.sel = null;
+    suRender(); sfx('move');
+    return;
+  }
+  if (SU.sel != null) return suMove(SU.sel, i);
+  if (SU.board[i]) { SU.sel = i; suRender(); }
+}
+
+function suRender(anim) {
+  const b = $('sboard');
+  let html = '';
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const f = SU.flip ? 7 - c : c, rk = SU.flip ? r : 7 - r, i = suIdx(f, rk), p = SU.board[i];
+    let cls = 'sq ' + ((f + rk) % 2 === 0 ? 'dark' : 'light');
+    if (SU.last && (SU.last.from === i || SU.last.to === i)) cls += ' last';
+    if (SU.sel === i) cls += ' sel';
+    let inner = '';
+    if (c === 0) inner += `<i class="co rk">${rk + 1}</i>`;
+    if (r === 7) inner += `<i class="co fl">${FILES[f]}</i>`;
+    if (p) inner += `<span class="pc ${p.c}">${GLYPH[p.t]}</span>`;
+    html += `<div class="${cls}" data-i="${i}">${inner}</div>`;
+  }
+  b.innerHTML = html;
+
+  // the piece slides from where it was to where it landed
+  if (anim && SU.last) {
+    const el = b.querySelector(`.sq[data-i="${SU.last.to}"] .pc`);
+    if (el) {
+      const size = b.clientWidth / 8, sx = i => SU.flip ? 7 - (i % 8) : i % 8, sy = i => SU.flip ? Math.floor(i / 8) : 7 - Math.floor(i / 8);
+      el.style.transition = 'none';
+      el.style.transform = `translate(${(sx(SU.last.from) - sx(SU.last.to)) * size}px, ${(sy(SU.last.from) - sy(SU.last.to)) * size}px)`;
+      void el.offsetWidth;
+      el.style.transition = 'transform .22s ease';
+      el.style.transform = '';
+    }
+  }
+
+  const sp = SU.sel != null ? SU.board[SU.sel] : null;
+  $('sstatus').textContent = sp ? `Moving the ${SU_NAMES[sp.t]} from ${suSq(SU.sel)}. Click a square to put it there, or press Esc to cancel.`
+    : SU.tool ? (SU.tool === 'x' ? 'Eraser: click a piece to remove it.' : 'Click squares to place pieces. Right-click a piece to move one instead.')
+    : 'Right-click a piece, then click a square.';
+
+  const pieces = ['wk', 'wq', 'wr', 'wb', 'wn', 'wp', 'bk', 'bq', 'br', 'bb', 'bn', 'bp'];
+  $('spal').innerHTML = pieces.map(k => `<button type="button" data-tool="${k}" class="${SU.tool === k ? 'on' : ''}" title="Place a ${k[0] === 'w' ? 'white' : 'black'} ${SU_NAMES[k[1]]}" aria-label="Place a ${k[0] === 'w' ? 'white' : 'black'} ${SU_NAMES[k[1]]}"><span class="pc ${k[0]}">${GLYPH[k[1]]}</span></button>`).join('') +
+    `<button type="button" data-tool="x" class="erase${SU.tool === 'x' ? ' on' : ''}">Eraser</button>`;
+
+  const c = $('scontrols'); c.innerHTML = '';
+  const add = (label, fn, cls, dis) => { const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn ' + (cls || ''); bt.textContent = label; bt.onclick = fn; bt.disabled = !!dis; c.appendChild(bt); };
+  add('Undo', suUndo, '', !SU.hist.length);
+  add('Redo', suRedo, '', !SU.redo.length);
+  add('Flip board', () => { SU.flip = !SU.flip; suRender(); });
+  add('Start position', () => { suPush(); SU.board = suParse(SU_START); SU.arrow = null; SU.last = null; SU.sel = null; suRender(); });
+  add('Clear board', () => { suPush(); SU.board = new Array(64).fill(null); SU.arrow = null; SU.last = null; SU.sel = null; suRender(); });
+  add('Back to lobby', suLeave, 'ghost');
+
+  $('sturn').querySelectorAll('button').forEach(bt => bt.classList.toggle('on', bt.dataset.v === SU.turn));
+  const fi = $('sfen');
+  if (document.activeElement !== fi) fi.value = suFen();
+  suDrawArrow();
+}
+
+// The green arrow for the last move. A knight gets an L-shaped arrow, like on chess.com.
+function suDrawArrow() {
+  let svg = $('sarrow');
+  const a = SU.arrow;
+  if (!a || $('view-setup').classList.contains('hidden')) { if (svg) svg.remove(); return; }
+  const b = $('sboard'), wrap = $('sboard-wrap');
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'sarrow'; svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(svg);
+  }
+  svg.style.cssText = `position:absolute;left:${b.offsetLeft}px;top:${b.offsetTop}px;width:${b.offsetWidth}px;height:${b.offsetHeight}px;pointer-events:none;z-index:6`;
+  const ctr = i => { const x = i % 8, y = Math.floor(i / 8); return [(SU.flip ? 7 - x : x) + 0.5, (SU.flip ? y : 7 - y) + 0.5]; };
+  const [x1, y1] = ctr(a.from), [x2, y2] = ctr(a.to);
+  const dx = x2 - x1, dy = y2 - y1;
+  let pts = [[x1, y1], [x2, y2]];
+  if (a.knight && Math.abs(Math.abs(dx) * Math.abs(dy) - 2) < 1e-6) {
+    pts = Math.abs(dx) > Math.abs(dy) ? [[x1, y1], [x2, y1], [x2, y2]] : [[x1, y1], [x1, y2], [x2, y2]];   // long leg first, then the short one
+  }
+  const n = pts.length, [tx, ty] = pts[n - 1], [px, py] = pts[n - 2];
+  const len = Math.hypot(tx - px, ty - py) || 1, ux = (tx - px) / len, uy = (ty - py) / len;
+  const head = 0.55, half = 0.33, bx = tx - ux * head, by = ty - uy * head;       // where the shaft meets the arrow head
+  const f = v => v.toFixed(3);
+  const line = pts.slice(0, n - 1).concat([[bx + ux * 0.04, by + uy * 0.04]]).map(q => f(q[0]) + ',' + f(q[1])).join(' ');
+  svg.innerHTML = `<g opacity="0.85"><polyline points="${line}" fill="none" stroke="#78a834" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>` +
+    `<polygon points="${f(tx)},${f(ty)} ${f(bx - uy * half)},${f(by + ux * half)} ${f(bx + uy * half)},${f(by - ux * half)}" fill="#78a834"/></g>`;
+}
+
+function bindSetup() {
+  const b = $('sboard');
+  b.addEventListener('click', e => { const sq = e.target.closest('.sq'); if (sq) suClick(+sq.dataset.i); });
+  b.addEventListener('contextmenu', e => {
+    e.preventDefault();                                                // no browser menu on the board
+    const sq = e.target.closest('.sq');
+    if (!sq) return;
+    const i = +sq.dataset.i;
+    if (SU.sel != null && SU.sel !== i) suMove(SU.sel, i);              // right-click any destination, occupied or empty
+    else if (SU.board[i]) suPick(i);                                    // right-click a piece: pick it up
+  });
+  $('spal').addEventListener('click', e => {
+    const bt = e.target.closest('button[data-tool]');
+    if (!bt) return;
+    SU.tool = SU.tool === bt.dataset.tool ? null : bt.dataset.tool;
+    SU.sel = null;
+    suRender();
+  });
+  $('sturn').addEventListener('click', e => {
+    const bt = e.target.closest('button[data-v]');
+    if (!bt) return;
+    SU.turn = bt.dataset.v;
+    suRender();
+  });
+  $('sfen-load').onclick = () => {
+    const raw = $('sfen').value, bd = suParse(raw);
+    if (!bd) return toast('That is not a valid FEN. Try pasting the full position, like the start position.', true);
+    suPush();
+    SU.board = bd; SU.arrow = null; SU.last = null; SU.sel = null;
+    const t = String(raw).trim().split(/\s+/)[1];
+    SU.turn = t === 'b' ? 'b' : 'w';
+    $('sfen').blur();
+    suRender();
+  };
+  $('sfen').addEventListener('keydown', e => { if (e.key === 'Enter') $('sfen-load').onclick(); });
+  $('sfen-copy').onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText(suFen()).then(() => toast('FEN copied.')); else toast(suFen()); };
+  document.addEventListener('keydown', e => {
+    if ($('view-setup').classList.contains('hidden')) return;
+    if (e.key === 'Escape') { if (SU.sel != null || SU.tool) { SU.sel = null; SU.tool = null; suRender(); } return; }
+    if ((e.ctrlKey || e.metaKey) && !/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')) {
+      if (e.key === 'z') { e.preventDefault(); suUndo(); } else if (e.key === 'y') { e.preventDefault(); suRedo(); }
+    }
+  });
+  window.addEventListener('resize', suDrawArrow);
+  $('open-setup').onclick = openSetup;
+}
+
 /* ═════════════ Clocks ═════════════ */
 let SERVER_OFFSET = 0;   // server time minus this device's time, so online clocks agree
 async function syncServerClock() {
@@ -2867,7 +3145,35 @@ function canInteract() {
 
 function ownsPiece(p) { return p.color === S.game.turn() && (S.mode === 'local' || p.color === S.color); }
 
+function premovePosition() {
+  if (!S.game || S.mode !== 'online') return null;
+  const parts = S.game.fen().split(' ');
+  parts[1] = S.color; // generate legal-looking destinations for our pieces before our turn
+  try { return new Chess(parts.join(' ')); } catch (e) { return null; }
+}
+
 function onSquare(sq) {
+  if (!S.game || S.over || S.review) return;
+  const waitingPremove = S.mode === 'online' && S.online && S.online.row.status === 'active' && S.game.turn() !== S.color;
+  if (waitingPremove) {
+    if (S.sel && S.targets.includes(sq)) {
+      S.premove = {from: S.sel, to: sq, promotion: 'q'};
+      clearSel(); render();
+      toast(`Premove queued: ${S.premove.from} → ${S.premove.to}.`);
+      return;
+    }
+    const p = S.game.get(sq);
+    if (p && p.color === S.color) {
+      if (S.sel === sq) clearSel();
+      else {
+        const pg = premovePosition();
+        S.sel = sq;
+        S.targets = pg ? pg.moves({square: sq, verbose: true}).map(m => m.to) : [];
+      }
+    } else { clearSel(); S.premove = null; }
+    paintTargets(); drawPremoveArrow();
+    return;
+  }
   if (!canInteract()) return;
   if (S.sel && S.targets.includes(sq)) return tryMove(S.sel, sq);
   const p = S.game.get(sq);
@@ -2876,6 +3182,21 @@ function onSquare(sq) {
     else { S.sel = sq; S.targets = S.game.moves({square: sq, verbose: true}).map(m => m.to); }
   } else clearSel();
   paintTargets();
+}
+
+function queuePremove(from, to, promotion) {
+  S.premove = {from, to, promotion: promotion || 'q'};
+  clearSel(); render();
+  toast(`Premove queued: ${from} → ${to}.`);
+}
+
+function executePremove() {
+  if (!S.premove || !S.game || !S.online || S.online.busy || S.over || S.game.turn() !== S.color) return;
+  const pm = S.premove;
+  S.premove = null;
+  const legal = S.game.moves({square: pm.from, verbose: true}).find(m => m.to === pm.to && (!m.promotion || m.promotion === (pm.promotion || 'q')));
+  if (!legal) { render(); toast('Premove was no longer legal.', true); return; }
+  commit(pm.from, pm.to, legal.promotion || pm.promotion || 'q');
 }
 
 function tryMove(from, to) {
@@ -3022,7 +3343,7 @@ function lastOf(g) {
   const h = g.history({verbose: true});
   return h.length ? {from: h[h.length - 1].from, to: h[h.length - 1].to} : null;
 }
-function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); syncReviewSfx(); drawAdminArrow(); }
+function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); syncReviewSfx(); drawAdminArrow(); drawPremoveArrow(); }
 
 function findKing(brd, color) {
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -3050,6 +3371,8 @@ function renderBoard(g) {
       if (last && (last.from === sq || last.to === sq)) cls += ' last';
       if (S.sel === sq) cls += ' sel';
       if (S.targets.includes(sq)) cls += ' target' + (p ? ' cap' : '');
+      if (S.premove && S.premove.from === sq) cls += ' premove-from';
+      if (S.premove && S.premove.to === sq) cls += ' premove-to';
       if (chk === sq) cls += ' check';
       let inner = '';
       if (c === 0) inner += `<i class="co rk">${rk + 1}</i>`;
@@ -3060,6 +3383,27 @@ function renderBoard(g) {
     }
   }
   b.innerHTML = html;
+}
+
+function drawPremoveArrow() {
+  const wrap = document.querySelector('#view-game .board-wrap');
+  let svg = document.getElementById('premove-arrow');
+  if (!S.premove || !wrap || $('view-game').classList.contains('hidden')) { if (svg) svg.remove(); return; }
+  const board = $('board');
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'premove-arrow'; svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(svg);
+  }
+  svg.style.cssText = `position:absolute;left:${board.offsetLeft}px;top:${board.offsetTop}px;width:${board.offsetWidth}px;height:${board.offsetHeight}px;pointer-events:none;z-index:7`;
+  const center = sq => {
+    const file = FILES.indexOf(sq[0]), rank = +sq[1] - 1;
+    return [(S.flip ? 7 - file : file) + .5, (S.flip ? rank : 7 - rank) + .5];
+  };
+  const [x1,y1] = center(S.premove.from), [x2,y2] = center(S.premove.to);
+  const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1, ux=dx/len, uy=dy/len;
+  const bx=x2-ux*.48, by=y2-uy*.48, f=n=>n.toFixed(3);
+  svg.innerHTML = `<defs><marker id="pmhead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto"><path d="M0,0 L4,2 L0,4 z" fill="#62b5ff"/></marker></defs><line x1="${f(x1)}" y1="${f(y1)}" x2="${f(bx)}" y2="${f(by)}" stroke="#62b5ff" stroke-width=".16" stroke-linecap="round" stroke-dasharray=".24 .14" marker-end="url(#pmhead)" opacity=".95"/>`;
 }
 
 function paintTargets() {
@@ -3211,6 +3555,7 @@ function renderSide(vg) {
     return;
   }
   add('Flip board', () => { S.flip = !S.flip; render(); });
+  if (S.premove) add('Cancel premove', () => { S.premove = null; clearSel(); render(); }, 'danger');
   if (S.over && total) add('Overview', startReview, 'primary');
   if (S.mode === 'ai' || S.mode === 'local') {
     const u = add('Undo', undo);
@@ -3540,6 +3885,7 @@ function bindStatic() {
   $('btn-sound').onclick = () => setSound(!SFX.on);
   $('btn-admin').onclick = showAdminMenu;
   window.addEventListener('resize', drawAdminArrow);
+  bindSetup();
   ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { if (SFX.on) audio(); }, {once: true}));   // browsers only allow audio after a tap or key press
   $('tab-in').onclick = () => setAuthMode('in');
   $('tab-up').onclick = () => setAuthMode('up');
@@ -3569,6 +3915,7 @@ function bindStatic() {
     if (e.key in keys) { e.preventDefault(); stopAuto(); setPly(keys[e.key]); }
   });
   bindBoard();
+  window.addEventListener('resize', drawPremoveArrow);
   miniBoard($('mini'), 'r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4');
 }
 
