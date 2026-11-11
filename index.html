@@ -111,19 +111,80 @@ label input{margin-top:6px}
 .leaders .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .code-row input{max-width:150px;text-transform:uppercase;letter-spacing:.12em;font-weight:700}
 
-/* Kung Fu Chess */
-#view-kfc{--bs:max(280px,min(calc(100vw - 32px),calc(100vh - 210px),680px))}
+
+/* Kung Fu Chess, styled after Lichess. Pieces: cburnett set by Colin M.L. Burnett (GPLv2+), as used on Lichess. */
+#view-kfc{--panel:#262421;--panel2:#302e2b;--line:#3d3a35;--text:#bababa;--muted:#8a8782;background:#161512;color:#bababa;min-height:calc(100vh - 62px)}
+#view-kfc{--bs:max(280px,min(calc(100vw - 24px),calc(100vh - 190px),700px))}
+#view-kfc .btn{background:#302e2b;border-color:#3d3a35;color:#bababa;border-radius:4px}
+#view-kfc .btn:hover{background:#3a3733;color:#fff}
+#view-kfc .btn.primary{background:#629924;border-color:#629924;color:#fff}
+#view-kfc .btn.primary:hover{background:#72ad2b}
+#view-kfc .btn.danger{color:#e08c85}
+.kfc-wrap{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:flex-start;padding:14px 12px 40px}
+.kfc-wrap .board-wrap{width:var(--bs)}
+[data-pc]{background-repeat:no-repeat;background-position:center;background-size:100%}
+[data-pc="wk"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgdmlld0JveD0iMCAwIDQ1IDQ1Ij48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjEuNSI+PHBhdGggc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZD0iTTIyLjUgMTEuNjNWNk0yMCA4aDUiLz48cGF0aCBmaWxsPSIjZmZmIiBzdHJva2UtbGluZWNhcD0iYnV0dCIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZD0iTTIyLjUgMjVzNC41LTcuNSAzLTEwLjVjMCAwLTEtMi41LTMtMi41cy0zIDIuNS0zIDIuNWMtMS41IDMgMyAxMC41IDMgMTAuNSIvPjxwYXRoIGZpbGw9IiNmZmYiIGQ9Ik0xMS41IDM3YzUuNSAzLjUgMTUuNSAzLjUgMjEgMHYtN3M5LTQuNSA2LTEwLjVjLTQtNi41LTEzLjUtMy41LTE2IDRWMjd2LTMuNWMtMy41LTcuNS0xMy0xMC41LTE2LTQtMyA2IDUgMTAgNSAxMHoiLz48cGF0aCBkPSJNMTEuNSAzMGM1LjUtMyAxNS41LTMgMjEgMG0tMjEgMy41YzUuNS0zIDE1LjUtMyAyMSAwbS0yMSAzLjVjNS41LTMgMTUuNS0zIDIxIDAiLz48L2c+PC9zdmc+")}
+[data-pc="wq"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9IiNmZmYiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48cGF0aCBkPSJNOCAxMmEyIDIgMCAxIDEtNCAwIDIgMiAwIDEgMSA0IDBtMTYuNS00LjVhMiAyIDAgMSAxLTQgMCAyIDIgMCAxIDEgNCAwTTQxIDEyYTIgMiAwIDEgMS00IDAgMiAyIDAgMSAxIDQgME0xNiA4LjVhMiAyIDAgMSAxLTQgMCAyIDIgMCAxIDEgNCAwTTMzIDlhMiAyIDAgMSAxLTQgMCAyIDIgMCAxIDEgNCAwIi8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIGQ9Ik05IDI2YzguNS0xLjUgMjEtMS41IDI3IDBsMi0xMi03IDExVjExbC01LjUgMTMuNS0zLTE1LTMgMTUtNS41LTE0VjI1TDcgMTR6Ii8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIGQ9Ik05IDI2YzAgMiAxLjUgMiAyLjUgNCAxIDEuNSAxIDEgLjUgMy41LTEuNSAxLTEuNSAyLjUtMS41IDIuNS0xLjUgMS41LjUgMi41LjUgMi41IDYuNSAxIDE2LjUgMSAyMyAwIDAgMCAxLjUtMSAwLTIuNSAwIDAgLjUtMS41LTEtMi41LS41LTIuNS0uNS0yIC41LTMuNSAxLTIgMi41LTIgMi41LTQtOC41LTEuNS0xOC41LTEuNS0yNyAweiIvPjxwYXRoIGZpbGw9Im5vbmUiIGQ9Ik0xMS41IDMwYzMuNS0xIDE4LjUtMSAyMiAwTTEyIDMzLjVjNi0xIDE1LTEgMjEgMCIvPjwvZz48L3N2Zz4=")}
+[data-pc="wr"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9IiNmZmYiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48cGF0aCBzdHJva2UtbGluZWNhcD0iYnV0dCIgZD0iTTkgMzloMjd2LTNIOXptMy0zdi00aDIxdjR6bS0xLTIyVjloNHYyaDVWOWg1djJoNVY5aDR2NSIvPjxwYXRoIGQ9Im0zNCAxNC0zIDNIMTRsLTMtMyIvPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJidXR0IiBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBkPSJNMzEgMTd2MTIuNUgxNFYxNyIvPjxwYXRoIGQ9Im0zMSAyOS41IDEuNSAyLjVoLTIwbDEuNS0yLjUiLz48cGF0aCBmaWxsPSJub25lIiBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBkPSJNMTEgMTRoMjMiLz48L2c+PC9zdmc+")}
+[data-pc="wb"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48ZyBmaWxsPSIjZmZmIiBzdHJva2UtbGluZWNhcD0iYnV0dCI+PHBhdGggZD0iTTkgMzZjMy4zOS0uOTcgMTAuMTEuNDMgMTMuNS0yIDMuMzkgMi40MyAxMC4xMSAxLjAzIDEzLjUgMiAwIDAgMS42NS41NCAzIDItLjY4Ljk3LTEuNjUuOTktMyAuNS0zLjM5LS45Ny0xMC4xMS40Ni0xMy41LTEtMy4zOSAxLjQ2LTEwLjExLjAzLTEzLjUgMS0xLjM1LjQ5LTIuMzIuNDctMy0uNSAxLjM1LTEuOTQgMy0yIDMtMnoiLz48cGF0aCBkPSJNMTUgMzJjMi41IDIuNSAxMi41IDIuNSAxNSAwIC41LTEuNSAwLTIgMC0yIDAtMi41LTIuNS00LTIuNS00IDUuNS0xLjUgNi0xMS41LTUtMTUuNS0xMSA0LTEwLjUgMTQtNSAxNS41IDAgMC0yLjUgMS41LTIuNSA0IDAgMC0uNS41IDAgMnoiLz48cGF0aCBkPSJNMjUgOGEyLjUgMi41IDAgMSAxLTUgMCAyLjUgMi41IDAgMSAxIDUgMHoiLz48L2c+PHBhdGggc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZD0iTTE3LjUgMjZoMTBNMTUgMzBoMTVtLTcuNS0xNC41djVNMjAgMThoNSIvPjwvZz48L3N2Zz4=")}
+[data-pc="wn"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjIgMTBjMTAuNSAxIDE2LjUgOCAxNiAyOUgxNWMwLTkgMTAtNi41IDgtMjEiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjQgMThjLjM4IDIuOTEtNS41NSA3LjM3LTggOS0zIDItMi44MiA0LjM0LTUgNC0xLjA0Mi0uOTQgMS40MS0zLjA0IDAtMy0xIDAgLjE5IDEuMjMtMSAyLTEgMC00LjAwMyAxLTQtNCAwLTIgNi0xMiA2LTEyczEuODktMS45IDItMy41Yy0uNzMtLjk5NC0uNS0yLS41LTMgMS0xIDMgMi41IDMgMi41aDJzLjc4LTEuOTkyIDIuNS0zYzEgMCAxIDMgMSAzIi8+PHBhdGggZmlsbD0iIzAwMCIgZD0iTTkuNSAyNS41YS41LjUgMCAxIDEtMSAwIC41LjUgMCAxIDEgMSAwbTUuNDMzLTkuNzVhLjUgMS41IDMwIDEgMS0uODY2LS41LjUgMS41IDMwIDEgMSAuODY2LjUiLz48L2c+PC9zdmc+")}
+[data-pc="wp"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxwYXRoIGZpbGw9IiNmZmYiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2Utd2lkdGg9IjEuNSIgZD0iTTIyLjUgOWMtMi4yMSAwLTQgMS43OS00IDQgMCAuODkuMjkgMS43MS43OCAyLjM4QzE3LjMzIDE2LjUgMTYgMTguNTkgMTYgMjFjMCAyLjAzLjk0IDMuODQgMi40MSA1LjAzLTMgMS4wNi03LjQxIDUuNTUtNy40MSAxMy40N2gyM2MwLTcuOTItNC40MS0xMi40MS03LjQxLTEzLjQ3IDEuNDctMS4xOSAyLjQxLTMgMi40MS01LjAzIDAtMi40MS0xLjMzLTQuNS0zLjI4LTUuNjIuNDktLjY3Ljc4LTEuNDkuNzgtMi4zOCAwLTIuMjEtMS43OS00LTQtNHoiLz48L3N2Zz4=")}
+[data-pc="bk"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgdmlld0JveD0iMCAwIDQ1IDQ1Ij48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjEuNSI+PHBhdGggc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgZD0iTTIyLjUgMTEuNlY2Ii8+PHBhdGggZmlsbD0iIzAwMCIgc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0yMi41IDI1czQuNS03LjUgMy0xMC41YzAgMC0xLTIuNS0zLTIuNXMtMyAyLjUtMyAyLjVjLTEuNSAzIDMgMTAuNSAzIDEwLjUiLz48cGF0aCBmaWxsPSIjMDAwIiBkPSJNMTEuNSAzN2EyMi4zIDIyLjMgMCAwIDAgMjEgMHYtN3M5LTQuNSA2LTEwLjVjLTQtNi41LTEzLjUtMy41LTE2IDRWMjd2LTMuNWMtMy41LTcuNS0xMy0xMC41LTE2LTQtMyA2IDUgMTAgNSAxMHoiLz48cGF0aCBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBkPSJNMjAgOGg1Ii8+PHBhdGggc3Ryb2tlPSIjZWNlY2VjIiBkPSJNMzIgMjkuNXM4LjUtNCA2LTkuN0MzNC4xIDE0IDI1IDE4IDIyLjUgMjQuNnYyLjEtMi4xQzIwIDE4IDkuOSAxNCA3IDE5LjljLTIuNSA1LjYgNC44IDkgNC44IDkiLz48cGF0aCBzdHJva2U9IiNlY2VjZWMiIGQ9Ik0xMS41IDMwYzUuNS0zIDE1LjUtMyAyMSAwbS0yMSAzLjVjNS41LTMgMTUuNS0zIDIxIDBtLTIxIDMuNWM1LjUtMyAxNS41LTMgMjEgMCIvPjwvZz48L3N2Zz4=")}
+[data-pc="bq"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48ZyBzdHJva2U9Im5vbmUiPjxjaXJjbGUgY3g9IjYiIGN5PSIxMiIgcj0iMi43NSIvPjxjaXJjbGUgY3g9IjE0IiBjeT0iOSIgcj0iMi43NSIvPjxjaXJjbGUgY3g9IjIyLjUiIGN5PSI4IiByPSIyLjc1Ii8+PGNpcmNsZSBjeD0iMzEiIGN5PSI5IiByPSIyLjc1Ii8+PGNpcmNsZSBjeD0iMzkiIGN5PSIxMiIgcj0iMi43NSIvPjwvZz48cGF0aCBzdHJva2UtbGluZWNhcD0iYnV0dCIgZD0iTTkgMjZjOC41LTEuNSAyMS0xLjUgMjcgMGwyLjUtMTIuNUwzMSAyNWwtLjMtMTQuMS01LjIgMTMuNi0zLTE0LjUtMyAxNC41LTUuMi0xMy42TDE0IDI1IDYuNSAxMy41eiIvPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJidXR0IiBkPSJNOSAyNmMwIDIgMS41IDIgMi41IDQgMSAxLjUgMSAxIC41IDMuNS0xLjUgMS0xLjUgMi41LTEuNSAyLjUtMS41IDEuNS41IDIuNS41IDIuNSA2LjUgMSAxNi41IDEgMjMgMCAwIDAgMS41LTEgMC0yLjUgMCAwIC41LTEuNS0xLTIuNS0uNS0yLjUtLjUtMiAuNS0zLjUgMS0yIDIuNS0yIDIuNS00LTguNS0xLjUtMTguNS0xLjUtMjcgMHoiLz48cGF0aCBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0iYnV0dCIgZD0iTTExIDM4LjVhMzUgMzUgMSAwIDAgMjMgMCIvPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2VjZWNlYyIgZD0iTTExIDI5YTM1IDM1IDEgMCAxIDIzIDBtLTIxLjUgMi41aDIwbS0yMSAzYTM1IDM1IDEgMCAwIDIyIDBtLTIzIDNhMzUgMzUgMSAwIDAgMjQgMCIvPjwvZz48L3N2Zz4=")}
+[data-pc="br"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48cGF0aCBzdHJva2UtbGluZWNhcD0iYnV0dCIgZD0iTTkgMzloMjd2LTNIOXptMy41LTcgMS41LTIuNWgxN2wxLjUgMi41em0tLjUgNHYtNGgyMXY0eiIvPjxwYXRoIHN0cm9rZS1saW5lY2FwPSJidXR0IiBzdHJva2UtbGluZWpvaW49Im1pdGVyIiBkPSJNMTQgMjkuNXYtMTNoMTd2MTN6Ii8+PHBhdGggc3Ryb2tlLWxpbmVjYXA9ImJ1dHQiIGQ9Ik0xNCAxNi41IDExIDE0aDIzbC0zIDIuNXpNMTEgMTRWOWg0djJoNVY5aDV2Mmg1VjloNHY1eiIvPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2VjZWNlYyIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgc3Ryb2tlLXdpZHRoPSIxIiBkPSJNMTIgMzUuNWgyMW0tMjAtNGgxOW0tMTgtMmgxN20tMTctMTNoMTdNMTEgMTRoMjMiLz48L2c+PC9zdmc+")}
+[data-pc="bb"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48ZyBmaWxsPSIjMDAwIiBzdHJva2UtbGluZWNhcD0iYnV0dCI+PHBhdGggZD0iTTkgMzZjMy40LTEgMTAuMS40IDEzLjUtMiAzLjQgMi40IDEwLjEgMSAxMy41IDIgMCAwIDEuNi41IDMgMi0uNyAxLTEuNiAxLTMgLjUtMy40LTEtMTAuMS41LTEzLjUtMS0zLjQgMS41LTEwLjEgMC0xMy41IDEtMS40LjUtMi4zLjUtMy0uNSAxLjQtMiAzLTIgMy0yeiIvPjxwYXRoIGQ9Ik0xNSAzMmMyLjUgMi41IDEyLjUgMi41IDE1IDAgLjUtMS41IDAtMiAwLTIgMC0yLjUtMi41LTQtMi41LTQgNS41LTEuNSA2LTExLjUtNS0xNS41LTExIDQtMTAuNSAxNC01IDE1LjUgMCAwLTIuNSAxLjUtMi41IDQgMCAwLS41LjUgMCAyeiIvPjxwYXRoIGQ9Ik0yNSA4YTIuNSAyLjUgMCAxIDEtNSAwIDIuNSAyLjUgMCAxIDEgNSAweiIvPjwvZz48cGF0aCBzdHJva2U9IiNlY2VjZWMiIHN0cm9rZS1saW5lam9pbj0ibWl0ZXIiIGQ9Ik0xNy41IDI2aDEwTTE1IDMwaDE1bS03LjUtMTQuNXY1TTIwIDE4aDUiLz48L2c+PC9zdmc+")}
+[data-pc="bn"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48cGF0aCBmaWxsPSIjMDAwIiBkPSJNMjIgMTBjMTAuNSAxIDE2LjUgOCAxNiAyOUgxNWMwLTkgMTAtNi41IDgtMjEiLz48cGF0aCBmaWxsPSIjMDAwIiBkPSJNMjQgMThjLjM4IDIuOTEtNS41NSA3LjM3LTggOS0zIDItMi44MiA0LjM0LTUgNC0xLjA0LS45NCAxLjQxLTMuMDQgMC0zLTEgMCAuMTkgMS4yMy0xIDItMSAwLTQgMS00LTQgMC0yIDYtMTIgNi0xMnMxLjg5LTEuOSAyLTMuNWMtLjczLTEtLjUtMi0uNS0zIDEtMSAzIDIuNSAzIDIuNWgycy43OC0yIDIuNS0zYzEgMCAxIDMgMSAzIi8+PHBhdGggZmlsbD0iI2VjZWNlYyIgc3Ryb2tlPSIjZWNlY2VjIiBkPSJNOS41IDI1LjVhLjUuNSAwIDEgMS0xIDAgLjUuNSAwIDEgMSAxIDBtNS40My05Ljc1YS41IDEuNSAzMCAxIDEtLjg2LS41LjUgMS41IDMwIDEgMSAuODYuNSIvPjxwYXRoIGZpbGw9IiNlY2VjZWMiIHN0cm9rZT0ibm9uZSIgZD0ibTI0LjU1IDEwLjQtLjQ1IDEuNDUuNS4xNWMzLjE1IDEgNS42NSAyLjQ5IDcuOSA2Ljc1UzM1Ljc1IDI5LjA2IDM1LjI1IDM5bC0uMDUuNWgyLjI1bC4wNS0uNWMuNS0xMC4wNi0uODgtMTYuODUtMy4yNS0yMS4zNHMtNS43OS02LjY0LTkuMTktNy4xNnoiLz48L2c+PC9zdmc+")}
+[data-pc="bp"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxwYXRoIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2Utd2lkdGg9IjEuNSIgZD0iTTIyLjUgOWE0IDQgMCAwIDAtMy4yMiA2LjM4IDYuNDggNi40OCAwIDAgMC0uODcgMTAuNjVjLTMgMS4wNi03LjQxIDUuNTUtNy40MSAxMy40N2gyM2MwLTcuOTItNC40MS0xMi40MS03LjQxLTEzLjQ3YTYuNDYgNi40NiAwIDAgMC0uODctMTAuNjVBNC4wMSA0LjAxIDAgMCAwIDIyLjUgOXoiLz48L3N2Zz4=")}
+
+#kboard{background:#b58863;border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.65);touch-action:none;margin:6px 0}
+#kboard .sq.light{background:#f0d9b5}
+#kboard .sq.dark{background:#b58863}
+#kboard .sq.light .co{color:#b58863} #kboard .sq.dark .co{color:#f0d9b5}
+#kboard .co{font-weight:700}
+#kboard .sq.klast::before{content:"";position:absolute;inset:0;background:rgba(155,199,0,.41)}
+#kboard .sq.ksel{box-shadow:none;background-image:linear-gradient(rgba(20,85,30,.5),rgba(20,85,30,.5))}
+#kboard .sq.ksel2{box-shadow:none;background-image:linear-gradient(rgba(20,30,110,.5),rgba(20,30,110,.5))}
+#kboard .sq.target::after{width:30%;height:30%;background:rgba(20,85,0,.5)}
+#kboard .sq.target.cap::after{width:100%;height:100%;border-radius:0;box-shadow:none;background:radial-gradient(transparent 0%,transparent 79%,rgba(20,85,0,.3) 80%)}
+#kboard .sq.target:hover{background-image:linear-gradient(rgba(20,85,30,.3),rgba(20,85,30,.3))}
 .kpieces{position:absolute;inset:0;pointer-events:none;z-index:4}
-.kp{position:absolute;left:0;top:0;width:12.5%;height:12.5%;display:flex;align-items:center;justify-content:center;transition:transform var(--kdur,.3s) linear,opacity .25s;will-change:transform}
+.kp{position:absolute;left:0;top:0;width:12.5%;height:12.5%;transition:transform var(--kdur,.3s) linear,opacity .25s;will-change:transform}
 .kp.moving{z-index:6}
-.kp.cool{opacity:.78}
-.kp.dead{opacity:0;transform-origin:center}
-.kp .kcd{position:absolute;left:10%;right:10%;bottom:6%;height:calc(var(--cd,0) * 14%);min-height:0;background:#f2b83c;border-radius:3px;opacity:.9;pointer-events:none}
-.kp .kcd.on{min-height:4px}
-#kboard .sq.ksel{box-shadow:inset 0 0 0 4px var(--gold)}
-#kboard .sq.ksel2{box-shadow:inset 0 0 0 4px #62b5ff}
-#kboard .sq.klast::before{content:"";position:absolute;inset:0;background:rgba(242,184,60,.28)}
-.ksetup .seg{margin-bottom:4px}
+.kp.drag{z-index:9;transition:none!important;cursor:grabbing;filter:drop-shadow(0 6px 6px rgba(0,0,0,.45))}
+.kp.dead{opacity:0}
+.kp .kcd{position:absolute;inset:7%;border-radius:50%;background:conic-gradient(rgba(12,12,12,.6) var(--p,0deg),transparent 0);opacity:0;pointer-events:none;transition:opacity .15s}
+.kp .kcd.on{opacity:1}
+.kp.cool>.kcd.on::after{content:"";position:absolute;inset:44%;border-radius:50%;background:rgba(255,255,255,.55)}
+#kboard .sq{cursor:pointer}
+.kplayer{display:flex;align-items:center;gap:9px;min-height:36px;padding:2px 4px;font-size:15px;color:#bababa}
+.kplayer .kpn{font-weight:600;color:#e8e6e3;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kdot{width:11px;height:11px;border-radius:50%;flex:none;border:1px solid #000}
+.kdot.w{background:#fff} .kdot.b{background:#222;border-color:#777}
+.krdy{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;background:#302e2b;color:#8a8782;white-space:nowrap}
+.krdy.some{color:#9ed05a}
+.kcaps{display:flex;align-items:center;margin-left:auto;min-height:22px}
+.kcaps .kcap{display:block;width:20px;height:20px;margin-right:-8px;flex:none}
+.kcaps em{font-style:normal;font-weight:700;font-size:13px;margin-left:14px;color:#9a9893}
+.kside{width:min(340px,100%);display:flex;flex-direction:column;gap:10px}
+.kcard{background:#262421;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.khead{padding:14px 16px;display:flex;align-items:center;gap:12px}
+.khead .kico{font:800 30px var(--f-head);color:#9ed05a;line-height:1}
+.ktitle b{display:block;color:#e8e6e3;font-size:17px}
+.ktitle span{font-size:13px;color:#8a8782}
+.kclock{margin-left:auto;font:700 26px var(--f-head);font-variant-numeric:tabular-nums;color:#e8e6e3}
+.kmoves{height:clamp(150px,calc(var(--bs) - 330px),420px);overflow-y:auto;padding:6px 8px;font-size:14px}
+.kmoves:empty::before{content:"Moves will appear here.";color:#8a8782;display:block;padding:8px}
+.kmv{display:grid;grid-template-columns:44px 16px 1fr;align-items:center;padding:3px 8px;border-radius:3px}
+.kmv:nth-child(odd){background:rgba(255,255,255,.03)}
+.kmv .kt{color:#77746f;font-variant-numeric:tabular-nums;font-size:12px}
+.kmv .kx{color:#e0deda;font-weight:600}
+.kstatus{padding:14px 16px;font:700 17px/1.3 var(--f-head);color:#e8e6e3;border-left:4px solid #3d3a35}
+.kstatus.done{border-left-color:#629924;background:#2b2a26}
+.kstatus.done.lose{border-left-color:#c33}
+.kctl{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px}
+.krules{padding:2px 16px 12px;font-size:13px;color:#8a8782}
+.krules summary{cursor:pointer;padding:10px 0;font-weight:700;color:#bababa}
+.krules ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
 
 /* game */
 #view-game{--bs:max(280px,min(calc(100vw - 32px),calc(100vh - 210px),680px))}
@@ -560,21 +621,24 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
   </section>
   <!-- Kung Fu Chess -->
   <section id="view-kfc" class="hidden">
-    <div class="game">
+    <div class="kfc-wrap">
       <div class="board-wrap">
-        <div class="pbar" id="kpbar-top"></div>
+        <div class="kplayer" id="kpbar-top"></div>
         <div class="board" id="kboard" aria-label="Kung Fu Chess board"><div class="kpieces" id="kpieces"></div></div>
-        <div class="pbar" id="kpbar-bot"></div>
+        <div class="kplayer" id="kpbar-bot"></div>
       </div>
-      <aside class="side">
-        <div class="status" id="kstatus" role="status" aria-live="polite"></div>
-        <ol class="rules">
-          <li>There are no turns. Any piece that is not cooling down can move at any moment.</li>
-          <li>After a piece lands it must wait out its cooldown (the gold bar).</li>
-          <li>Moving pieces take time to travel. Capture the enemy king to win.</li>
+      <aside class="kside">
+        <div class="kcard khead"><span class="kico" aria-hidden="true">&#9822;&#xFE0E;</span><div class="ktitle" id="ktitle"></div><div class="kclock" id="kclock" aria-label="Game time">0:00</div></div>
+        <div class="kcard kmoves" id="kmoves" aria-label="Moves"></div>
+        <div class="kcard kstatus" id="kstatus" role="status" aria-live="polite"></div>
+        <div class="kcard kctl" id="kcontrols"></div>
+        <details class="kcard krules"><summary>How it works</summary><ul>
+          <li>No turns: any piece that is not cooling down can move at any moment.</li>
+          <li>After landing, a piece rests until its cooldown circle empties.</li>
+          <li>Pieces take time to travel. Capture the enemy king to win.</li>
           <li>No check or castling. Pawns promote to queens.</li>
-        </ol>
-        <div class="controls" id="kcontrols"></div>
+          <li>Click or drag. Right-click clears your selection.</li>
+        </ul></details>
       </aside>
     </div>
   </section>
@@ -3594,7 +3658,8 @@ function bindBoard() {
    Real-time chess. There are no turns: every piece that is not cooling down may move at any moment. A move takes
    time to travel, and the piece then has to rest for the cooldown. Captures happen on arrival, the king is
    capturable, and there is no check, castling or en passant. Pawns promote to queens. */
-const KFC = {on: false, pieces: [], grid: [], els: {}, sel: {w: null, b: null}, active: 'w', over: null, tick: null, botT: null, nextId: 1, lastSig: ''};
+const KLNAME = {1: 'Easy', 2: 'Medium', 3: 'Hard', 4: 'Insane'};
+const KFC = {on: false, log: [], t0: 0, go: false, endAt: 0, rdy: '', pieces: [], grid: [], els: {}, sel: {w: null, b: null}, active: 'w', over: null, tick: null, botT: null, nextId: 1, lastSig: ''};
 const KVAL = {p: 1, n: 3, b: 3, r: 5, q: 9, k: 1000};
 const KLVL = {1: {lo: 2200, hi: 3600, noise: 7, look: false}, 2: {lo: 1100, hi: 2000, noise: 3.5, look: true}, 3: {lo: 550, hi: 1100, noise: 1.2, look: true}, 4: {lo: 250, hi: 520, noise: 0.35, look: true}};
 
@@ -3619,7 +3684,11 @@ function kfcStart(mode, level, cdSec, color) {
   }
   const now = Date.now();
   KFC.pieces.forEach(q => { q.ready = now + 1500; });         // a short moment to look at the board before the fight
+  KFC.t0 = now + 1500; KFC.go = false; KFC.endAt = 0; KFC.log = []; KFC.rdy = '';
   showView('kfc');
+  $('kmoves').innerHTML = '';
+  $('ktitle').innerHTML = `<b>Kung Fu Chess</b><span>${mode === 'bot' ? 'vs Computer (' + KLNAME[level] + ')' : 'Two players'} · ${cdSec}s cooldown</span>`;
+  $('kclock').textContent = '0:00';
   kfcBuildBoard(); kfcRenderPieces(); kfcBar(); kfcStatus(); kfcControls();
   clearInterval(KFC.tick); KFC.tick = setInterval(kfcLoop, 40);
   if (mode === 'bot') kfcScheduleBot(1500);
@@ -3647,13 +3716,13 @@ function kfcRenderPieces() {
     let el = KFC.els[q.id];
     if (!el) {
       el = document.createElement('div');
-      el.className = 'kp pc ' + q.c;
-      el.innerHTML = '<span class="kg"></span><span class="kcd"></span>';
+      el.className = 'kp';
+      el.innerHTML = '<span class="kcd"></span>';
       el.style.transition = 'none'; el.style.transform = kfcPos(q.x, q.y);
       layer.appendChild(el); KFC.els[q.id] = el;
       requestAnimationFrame(() => { el.style.transition = ''; });
     }
-    el.firstChild.textContent = GLYPH[q.t];
+    el.dataset.pc = q.c + q.t;
   });
 }
 
@@ -3739,12 +3808,21 @@ function kfcLand(q) {
   if (el) el.style.transform = kfcPos(m.tx, m.ty);
   q.ready = now + KFC.cd;
   KFC.last = {from: [m.fx, m.fy], to: [m.tx, m.ty]};
-  if (q.t === 'p' && (q.y === 7 || q.y === 0)) { q.t = 'q'; if (el) el.firstChild.textContent = GLYPH.q; sfx('promote'); }
+  const sqn = FILES[m.tx] + (m.ty + 1);
+  let txt = q.t === 'p' ? (target ? FILES[m.fx] + 'x' + sqn : sqn) : q.t.toUpperCase() + (target ? 'x' : '') + sqn;
+  if (q.t === 'p' && (q.y === 7 || q.y === 0)) { q.t = 'q'; if (el) el.dataset.pc = q.c + 'q'; txt += '=Q'; sfx('promote'); }
   else if (target) sfx('capture');
+  kfcLog(q.c, txt, now);
   if (target && target.t === 'k') kfcEnd(q.c);
   else kfcCheckDraw();
   KFC.lastSig = '';
   kfcBar();
+}
+function kfcFmt(ms) { const t = Math.max(0, Math.floor(ms / 1000)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); }
+function kfcLog(c, txt, now) {
+  const box = $('kmoves');
+  box.insertAdjacentHTML('beforeend', `<div class="kmv"><span class="kt">${kfcFmt(now - KFC.t0)}</span><span class="kdot ${c}"></span><span class="kx">${esc(txt)}</span></div>`);
+  box.scrollTop = box.scrollHeight;
 }
 function kfcKill(v, by) {
   v.dead = true; v.mv = null;
@@ -3756,7 +3834,7 @@ function kfcKill(v, by) {
   if (el) { el.classList.add('dead'); setTimeout(() => el.remove(), 300); delete KFC.els[v.id]; }
 }
 function kfcEnd(winner) {
-  KFC.over = {winner};
+  KFC.over = {winner}; KFC.endAt = Date.now();
   KFC.pieces.forEach(q => { if (q.mv) { q.mv = null; } });
   clearTimeout(KFC.botT);
   const mine = KFC.human == null || KFC.human === winner;
@@ -3766,7 +3844,7 @@ function kfcEnd(winner) {
 function kfcCheckDraw() {
   if (KFC.over) return;
   if (KFC.pieces.every(q => q.t === 'k')) {
-    KFC.over = {winner: null}; clearTimeout(KFC.botT); sfx('draw'); kfcStatus(); kfcControls();
+    KFC.over = {winner: null}; KFC.endAt = Date.now(); clearTimeout(KFC.botT); sfx('draw'); kfcStatus(); kfcControls();
   }
 }
 
@@ -3774,15 +3852,24 @@ function kfcLoop() {
   if (!KFC.on) return;
   const now = Date.now();
   KFC.pieces.slice().forEach(q => { if (q.mv && now >= q.mv.arr && !KFC.over) kfcLand(q); });
-  // cooldown bars
+  if (!KFC.go && now >= KFC.t0) { KFC.go = true; kfcStatus(); }
+  // cooldown pies
+  const cnt = {w: 0, b: 0};
   KFC.pieces.forEach(q => {
+    if (kfcReady(q, now)) cnt[q.c]++;
     const el = KFC.els[q.id]; if (!el) return;
     const left = q.ready - now, cool = left > 0 && !q.mv;
     el.classList.toggle('cool', cool);
-    const bar = el.lastChild;
-    bar.classList.toggle('on', cool);
-    el.style.setProperty('--cd', cool ? Math.min(1, left / KFC.cd) * 5 : 0);
+    const pie = el.lastChild;
+    pie.classList.toggle('on', cool);
+    if (cool) pie.style.setProperty('--p', (Math.min(1, left / KFC.cd) * 360).toFixed(1) + 'deg');
   });
+  const sigR = cnt.w + ',' + cnt.b;
+  if (sigR !== KFC.rdy) {
+    KFC.rdy = sigR;
+    document.querySelectorAll('.krdy').forEach(e => { const n = cnt[e.dataset.c]; e.textContent = n + ' ready'; e.classList.toggle('some', n > 0); });
+  }
+  $('kclock').textContent = kfcFmt((KFC.endAt || now) - KFC.t0);
   kfcPaintSel(now);
 }
 
@@ -3883,24 +3970,32 @@ function kfcBotThink() {
 /* ---- sidebar bits ---- */
 function kfcName(c) { return KFC.mode === 'local' ? (c === 'w' ? 'White' : 'Black') : (c === KFC.human ? (S.profile ? S.profile.username : 'You') : 'Computer'); }
 function kfcBar() {
+  const mat = c => KFC.caps[c].reduce((a, t) => a + (t === 'k' ? 0 : KVAL[t]), 0);
   const draw = (id, c) => {
-    const caps = KFC.caps[c].slice().sort((a, b) => KVAL[b] - KVAL[a]).map(t => `<span class="cp ${c === 'w' ? 'b' : 'w'}">${GLYPH[t]}</span>`).join('');
-    $(id).innerHTML = `<span class="dot"></span><span>${esc(kfcName(c))}</span><span class="caps">${caps}</span>`;
+    const o = c === 'w' ? 'b' : 'w', diff = mat(c) - mat(o);
+    const caps = KFC.caps[c].slice().sort((a, b) => KVAL[b] - KVAL[a]).map(t => `<i class="kcap" data-pc="${o}${t}"></i>`).join('');
+    $(id).innerHTML = `<span class="kdot ${c}"></span><b class="kpn">${esc(kfcName(c))}</b><span class="krdy" data-c="${c}"></span><span class="kcaps">${caps}${diff > 0 ? `<em>+${diff}</em>` : ''}</span>`;
   };
-  const bot = KFC.flip ? 'w' : 'b', top = bot;
+  const top = KFC.flip ? 'w' : 'b';
   draw('kpbar-top', top); draw('kpbar-bot', top === 'w' ? 'b' : 'w');
+  KFC.rdy = '';
 }
 function kfcStatus() {
   const el = $('kstatus');
-  if (!KFC.over) { el.textContent = KFC.mode === 'local' ? 'Both sides move at once. Go!' : 'Move any piece that is ready. Go!'; return; }
+  el.className = 'kcard kstatus';
+  if (!KFC.over) { el.textContent = !KFC.go ? 'Get ready…' : (KFC.mode === 'local' ? 'Both sides move at once. Go!' : 'Go! Move any piece that is ready.'); return; }
+  el.classList.add('done');
   const w = KFC.over.winner;
-  el.textContent = w == null ? 'Draw. Only kings are left.' : (KFC.human == null ? (w === 'w' ? 'White' : 'Black') + ' wins by capturing the king.' : (w === KFC.human ? 'You win. The enemy king has fallen.' : 'You lose. Your king was captured.'));
+  if (w == null) { el.textContent = 'Draw. Only kings are left.'; return; }
+  if (KFC.human == null) el.textContent = (w === 'w' ? 'White' : 'Black') + ' is victorious. King captured.';
+  else if (w === KFC.human) el.textContent = 'You are victorious. King captured.';
+  else { el.textContent = 'Defeat. Your king was captured.'; el.classList.add('lose'); }
 }
 function kfcControls() {
   const box = $('kcontrols');
   box.innerHTML = '';
   const add = (label, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = fn; box.appendChild(b); };
-  add(KFC.over ? 'Play again' : 'Restart', () => kfcStart(KFC.mode, KFC.level, KFC.cd / 1000, KFC.human || 'w'), KFC.over ? 'primary' : '');
+  add(KFC.over ? 'Rematch' : 'Restart', () => kfcStart(KFC.mode, KFC.level, KFC.cd / 1000, KFC.human || 'w'), KFC.over ? 'primary' : '');
   add('Flip board', () => { KFC.flip = !KFC.flip; kfcBuildBoard(); kfcRenderPieces(); KFC.lastSig = ''; kfcBar(); });
   add('Leave', leaveKfc, 'danger');
 }
@@ -3914,7 +4009,47 @@ function bindKfc() {
   });
   $('start-kfc').onclick = () => kfcStart($('seg-kfc-mode').dataset.val, +$('seg-kfc-lvl').dataset.val, +$('seg-kfc-cd').dataset.val, $('seg-kfc-col').dataset.val);
   const b = $('kboard');
-  b.addEventListener('click', e => { const s = e.target.closest('.sq'); if (s) kfcClick(+s.dataset.x, +s.dataset.y); });
+  let drag = null;
+  const cell = e => {                                         // board square under the pointer, in cell units
+    const r = b.getBoundingClientRect();
+    const cx = (e.clientX - r.left) / r.width * 8, cy = (e.clientY - r.top) / r.height * 8;
+    const c = Math.max(0, Math.min(7, Math.floor(cx))), rr = Math.max(0, Math.min(7, Math.floor(cy)));
+    return {cx, cy, x: KFC.flip ? 7 - c : c, y: KFC.flip ? rr : 7 - rr};
+  };
+  b.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !KFC.on || KFC.over) return;
+    const c = cell(e), q = KFC.grid[c.y][c.x];
+    drag = {x: c.x, y: c.y, sx: e.clientX, sy: e.clientY, q: null, live: false};
+    if (q && (KFC.human == null || KFC.human === q.c) && kfcReady(q)) drag.q = q;
+    b.setPointerCapture(e.pointerId);
+  });
+  b.addEventListener('pointermove', e => {
+    if (!drag || !drag.q) return;
+    if (!drag.live) {
+      if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 6) return;
+      drag.live = true;
+      KFC.active = drag.q.c; KFC.sel[drag.q.c] = drag.q.id; KFC.lastSig = ''; kfcPaintSel(Date.now());
+      const el = KFC.els[drag.q.id]; if (el) el.classList.add('drag');
+    }
+    const el = KFC.els[drag.q.id], c = cell(e);
+    if (el) el.style.transform = `translate(${(c.cx - 0.5) * 100}%,${(c.cy - 0.5) * 100}%)`;
+  });
+  const finish = (e, cancel) => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    const el = d.q ? KFC.els[d.q.id] : null;
+    if (el) el.classList.remove('drag');
+    const c = cell(e);
+    if (d.live && !cancel) {
+      if (c.x !== d.x || c.y !== d.y) kfcClick(c.x, c.y);
+      else { KFC.sel[d.q.c] = d.q.id; }
+      if (el && !d.q.mv) el.style.transform = kfcPos(d.q.x, d.q.y);
+      KFC.lastSig = ''; kfcPaintSel(Date.now());
+    } else if (!cancel) kfcClick(c.x, c.y);
+    else if (el && !d.q.mv) el.style.transform = kfcPos(d.q.x, d.q.y);
+  };
+  b.addEventListener('pointerup', e => finish(e, false));
+  b.addEventListener('pointercancel', e => finish(e, true));
   b.addEventListener('contextmenu', e => { e.preventDefault(); KFC.sel = {w: null, b: null}; KFC.lastSig = ''; kfcPaintSel(Date.now()); });
 }
 
