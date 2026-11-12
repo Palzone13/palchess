@@ -136,7 +136,7 @@ label input{margin-top:6px}
 [data-pc="bn"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMS41Ij48cGF0aCBmaWxsPSIjMDAwIiBkPSJNMjIgMTBjMTAuNSAxIDE2LjUgOCAxNiAyOUgxNWMwLTkgMTAtNi41IDgtMjEiLz48cGF0aCBmaWxsPSIjMDAwIiBkPSJNMjQgMThjLjM4IDIuOTEtNS41NSA3LjM3LTggOS0zIDItMi44MiA0LjM0LTUgNC0xLjA0LS45NCAxLjQxLTMuMDQgMC0zLTEgMCAuMTkgMS4yMy0xIDItMSAwLTQgMS00LTQgMC0yIDYtMTIgNi0xMnMxLjg5LTEuOSAyLTMuNWMtLjczLTEtLjUtMi0uNS0zIDEtMSAzIDIuNSAzIDIuNWgycy43OC0yIDIuNS0zYzEgMCAxIDMgMSAzIi8+PHBhdGggZmlsbD0iI2VjZWNlYyIgc3Ryb2tlPSIjZWNlY2VjIiBkPSJNOS41IDI1LjVhLjUuNSAwIDEgMS0xIDAgLjUuNSAwIDEgMSAxIDBtNS40My05Ljc1YS41IDEuNSAzMCAxIDEtLjg2LS41LjUgMS41IDMwIDEgMSAuODYuNSIvPjxwYXRoIGZpbGw9IiNlY2VjZWMiIHN0cm9rZT0ibm9uZSIgZD0ibTI0LjU1IDEwLjQtLjQ1IDEuNDUuNS4xNWMzLjE1IDEgNS42NSAyLjQ5IDcuOSA2Ljc1UzM1Ljc1IDI5LjA2IDM1LjI1IDM5bC0uMDUuNWgyLjI1bC4wNS0uNWMuNS0xMC4wNi0uODgtMTYuODUtMy4yNS0yMS4zNHMtNS43OS02LjY0LTkuMTktNy4xNnoiLz48L2c+PC9zdmc+")}
 [data-pc="bp"]{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHN0eWxlPSJjb2xvci1zY2hlbWU6bGlnaHQgb25seSIgd2lkdGg9IjQ1IiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgNDUgNDUiPjxwYXRoIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2Utd2lkdGg9IjEuNSIgZD0iTTIyLjUgOWE0IDQgMCAwIDAtMy4yMiA2LjM4IDYuNDggNi40OCAwIDAgMC0uODcgMTAuNjVjLTMgMS4wNi03LjQxIDUuNTUtNy40MSAxMy40N2gyM2MwLTcuOTItNC40MS0xMi40MS03LjQxLTEzLjQ3YTYuNDYgNi40NiAwIDAgMC0uODctMTAuNjVBNC4wMSA0LjAxIDAgMCAwIDIyLjUgOXoiLz48L3N2Zz4=")}
 
-#kboard{background:#b58863;border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.65);touch-action:none;margin:6px 0}
+#kboard{position:relative;background:#b58863;border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.65);touch-action:none;margin:6px 0}
 #kboard .sq.light{background:#f0d9b5}
 #kboard .sq.dark{background:#b58863}
 #kboard .sq.light .co{color:#b58863} #kboard .sq.dark .co{color:#f0d9b5}
@@ -182,6 +182,8 @@ label input{margin-top:6px}
 .kstatus.done{border-left-color:#629924;background:#2b2a26}
 .kstatus.done.lose{border-left-color:#c33}
 .kctl{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px}
+.kmv[data-i]{cursor:pointer}
+.kmv.cur{background:#3b4a25!important}
 .krules{padding:2px 16px 12px;font-size:13px;color:#8a8782}
 .krules summary{cursor:pointer;padding:10px 0;font-weight:700;color:#bababa}
 .krules ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
@@ -226,6 +228,63 @@ label input{margin-top:6px}
 .moves span[data-ply]:hover{background:var(--panel2)}
 .moves span.cur{background:var(--gold);color:#241a05;font-weight:700}
 .note{font-size:13px;line-height:1.4}
+
+/* Game screen: Lichess / chess.com look, with board themes and piece sets */
+#view-game,#view-kfc{--lt:#f0d9b5;--dk:#b58863}
+#view-game[data-board="green"],#view-kfc[data-board="green"]{--lt:#eeeed2;--dk:#769656}
+#view-game[data-board="blue"],#view-kfc[data-board="blue"]{--lt:#dee3e6;--dk:#8ca2ad}
+#view-game[data-board="teal"],#view-kfc[data-board="teal"]{--lt:#d3e2da;--dk:#5a8580}
+#view-game[data-board="gray"],#view-kfc[data-board="gray"]{--lt:#e4e4e4;--dk:#9a9a9a}
+#view-kfc #kboard .sq.light{background:var(--lt)} #view-kfc #kboard .sq.dark{background:var(--dk)} #view-kfc #kboard{background:var(--dk)}
+#view-kfc #kboard .sq.light .co{color:var(--dk)} #view-kfc #kboard .sq.dark .co{color:var(--lt)}
+#view-game{--panel:#262421;--panel2:#302e2b;--line:#3d3a35;--text:#bababa;--muted:#8a8782;background:#161512;color:#bababa;min-height:calc(100vh - 62px)}
+#view-game .btn{background:#302e2b;border-color:#3d3a35;color:#bababa;border-radius:4px}
+#view-game .btn:hover:not(:disabled){background:#3a3733;color:#fff}
+#view-game .btn.primary{background:#629924;border-color:#629924;color:#fff}
+#view-game .btn.primary:hover{background:#72ad2b}
+#view-game .btn.danger{color:#e08c85}
+#view-game .btn:disabled{opacity:.45}
+#board{background:var(--dk);border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.65);margin:6px 0}
+#board .sq.light{background:var(--lt)} #board .sq.dark{background:var(--dk)}
+#board .sq.light .co{color:var(--dk)} #board .sq.dark .co{color:var(--lt)}
+#board .co{font-weight:700}
+#board .sq.last::before{background:rgba(155,199,0,.41)}
+#board .sq.sel{box-shadow:none;background-image:linear-gradient(rgba(20,85,30,.5),rgba(20,85,30,.5))}
+#board .sq.target::after{width:30%;height:30%;background:rgba(20,85,0,.5)}
+#board .sq.target.cap::after{width:100%;height:100%;border-radius:0;box-shadow:none;background:radial-gradient(transparent 0%,transparent 79%,rgba(20,85,0,.3) 80%)}
+#board .sq.target:hover{background-image:linear-gradient(rgba(20,85,30,.3),rgba(20,85,30,.3))}
+#view-game:not([data-pieces="classic"]) #board .pc{font-size:0;width:100%;height:100%;background-repeat:no-repeat;background-position:center;background-size:100%;text-shadow:none;-webkit-text-stroke:0}
+#view-game[data-pieces="classic"] #board .pc[data-pc],#view-game[data-pieces="classic"] .cp[data-pc]{background-image:none}
+#view-game:not([data-pieces="classic"]) .cp{font-size:0;display:block;width:20px;height:20px;margin-right:-8px;background-repeat:no-repeat;background-position:center;background-size:100%;text-shadow:none;-webkit-text-stroke:0}
+#view-game .pbar{font-size:15px;min-height:38px;gap:9px}
+#view-game .pbar .pname{color:#e8e6e3;font-weight:600}
+#view-game .pbar .pname em{color:#8a8782}
+#view-game .pbar.turn .dot{background:#9ed05a;box-shadow:0 0 0 4px rgba(158,208,90,.22)}
+#view-game .pbar .adv{color:#9a9893;font-weight:700}
+#view-game .pbar .clk{background:#302e2b;color:#e8e6e3;border-radius:4px;font-size:22px;min-width:92px}
+#view-game .pbar .clk.run{background:#e8e6e3;color:#161512}
+#view-game .pbar .clk.low{color:#ff8f86}
+#view-game .pbar .clk.run.low{background:#c33;color:#fff}
+#view-game .side{gap:10px}
+#view-game .status{background:#262421;border-radius:4px;border-left:4px solid #3d3a35;padding:14px 16px;min-height:0;font-size:17px;color:#e8e6e3;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+#view-game .status.done{border-left-color:#629924;color:#e8e6e3;background:#2b2a26}
+#view-game .moves{background:#262421;border:0;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.4);padding:4px 0;height:clamp(160px,calc(var(--bs) - 340px),420px)}
+#view-game .moves li{padding:2px 10px;grid-template-columns:38px 1fr 1fr}
+#view-game .moves li:nth-child(odd){background:rgba(255,255,255,.03)}
+#view-game .moves .n{color:#77746f}
+#view-game .moves span[data-ply]:hover{background:#3a3733}
+#view-game .moves span.cur{background:#3b4a25;color:#fff}
+#view-game .controls{background:#262421;border-radius:4px;padding:10px 12px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+#view-game .invite{border-radius:4px}
+.themebox{background:#262421;border-radius:4px;padding:10px 14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.themebox .tb-row{display:flex;align-items:center;gap:12px;font-size:13px;color:#8a8782}
+.themebox .tb-row>span:first-child{width:50px;flex:none}
+.swatches{display:flex;gap:8px;flex-wrap:wrap}
+.swatches button{width:30px;height:30px;border-radius:4px;border:2px solid transparent;background:linear-gradient(135deg,var(--a) 50%,var(--b) 50%);cursor:pointer;padding:0}
+.swatches button.on{border-color:#9ed05a}
+.pset{display:flex;gap:6px}
+.pset button{padding:6px 12px;border-radius:4px;border:1px solid #3d3a35;background:#302e2b;color:#bababa;font:600 13px var(--f-body);cursor:pointer}
+.pset button.on{background:#629924;border-color:#629924;color:#fff}
 
 /* Move review */
 .move-review{display:inline-flex;align-items:center;gap:4px;margin-left:7px;font-size:11px;font-weight:700;white-space:nowrap;vertical-align:middle}
@@ -567,6 +626,10 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
             </div>
           </div>
 
+          <button class="acc-link" id="open-saved" type="button">
+            <span class="acc-t"><b>Open saved game</b><small>Paste a game link to replay it. Links hold the whole game, no account needed</small></span><span class="chev-r" aria-hidden="true"></span>
+          </button>
+
           <button class="acc-link" id="open-setup" type="button">
             <span class="acc-t"><b>Setup position</b><small>Arrange pieces, move them freely, and draw arrows</small></span><span class="chev-r" aria-hidden="true"></span>
           </button>
@@ -599,6 +662,16 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
         <ol class="moves" id="moves" aria-label="Move list"></ol>
         <div class="note muted hidden" id="note"></div>
         <div class="controls" id="controls"></div>
+        <div class="themebox" id="themebox">
+          <div class="tb-row"><span>Board</span><div class="swatches" id="board-themes">
+            <button type="button" data-theme="brown" title="Brown" style="--a:#f0d9b5;--b:#b58863"></button>
+            <button type="button" data-theme="green" title="Green" style="--a:#eeeed2;--b:#769656"></button>
+            <button type="button" data-theme="blue" title="Blue" style="--a:#dee3e6;--b:#8ca2ad"></button>
+            <button type="button" data-theme="gray" title="Gray" style="--a:#e4e4e4;--b:#9a9a9a"></button>
+            <button type="button" data-theme="teal" title="Classic teal" style="--a:#d3e2da;--b:#5a8580"></button>
+          </div></div>
+          <div class="tb-row"><span>Pieces</span><div class="pset" id="piece-sets"><button type="button" data-set="cburnett">Standard</button><button type="button" data-set="classic">Classic</button></div></div>
+        </div>
         <div class="adslot" id="ad-game"><div class="adlabel">Advertisement</div><div class="adbody"></div></div>
       </aside>
     </div>
@@ -637,7 +710,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
           <li>After landing, a piece rests until its cooldown circle empties.</li>
           <li>Pieces take time to travel. Capture the enemy king to win.</li>
           <li>No check or castling. Pawns promote to queens.</li>
-          <li>Click or drag. Right-click clears your selection.</li>
+          <li>Click or drag. Right-click and drag draws arrows.</li>
         </ul></details>
       </aside>
     </div>
@@ -1573,7 +1646,8 @@ async function cancelGame(id) {
 
 /* ═════════════ Online games ═════════════ */
 function teardownOnline() {
-  S.premove = null;
+  S.premove = null; S.saved = null;
+  uaClear('main'); uaClear('kfc');
   kfcStop();
   teardown4();
   endReview();
@@ -3200,6 +3274,7 @@ function bindSetup() {
   });
   window.addEventListener('resize', suDrawArrow);
   $('open-setup').onclick = openSetup;
+  $('open-saved').onclick = openSavedPrompt;
 }
 
 /* ═════════════ Clocks ═════════════ */
@@ -3554,7 +3629,7 @@ function lastOf(g) {
   const h = g.history({verbose: true});
   return h.length ? {from: h[h.length - 1].from, to: h[h.length - 1].to} : null;
 }
-function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); syncReviewSfx(); drawAdminArrow(); drawPremoveArrow(); }
+function render() { const vg = viewGame(); renderBoard(vg); renderSide(vg); syncSfx(); syncReviewSfx(); drawAdminArrow(); drawPremoveArrow(); uaDraw('main'); }
 
 function findKing(brd, color) {
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -3589,11 +3664,73 @@ function renderBoard(g) {
       if (c === 0) inner += `<i class="co rk">${rk + 1}</i>`;
       if (r === 7) inner += `<i class="co fl">${FILES[f]}</i>`;
       if (an && last && sq === last.to) inner += `<span class="sq-badge ${an.cls}" title="${esc(an.label)}. Best move: ${esc(an.best || '-')}" aria-label="${esc(an.label)}">${an.emoji}</span>`;
-      if (p) inner += `<span class="pc ${p.color}"${(can && ownsPiece(p)) || (waiting && p.color === S.color) ? ' draggable="true"' : ''}>${GLYPH[p.type]}</span>`;
+      if (p) inner += `<span class="pc ${p.color}" data-pc="${p.color}${p.type}"${(can && ownsPiece(p)) || (waiting && p.color === S.color) ? ' draggable="true"' : ''}>${GLYPH[p.type]}</span>`;
       html += `<div class="${cls}" data-sq="${sq}">${inner}</div>`;
     }
   }
   b.innerHTML = html;
+}
+
+/* ═════════════ Arrows and circles drawn with the right mouse button ═════════════
+   Right-click a square and drag to another square to draw an arrow. Right-click one square for a circle.
+   Draw the same one again to take it away. Shift = red, Ctrl = blue, Alt = yellow. A left click clears them all. */
+const UA = {main: {list: [], drag: null}, kfc: {list: [], drag: null}};
+const UA_COL = {g: '#78a834', r: '#d64545', b: '#3d87d6', y: '#e6b422'};
+function uaClear(k) { UA[k].list = []; UA[k].drag = null; uaDraw(k); }
+function uaDraw(k) {
+  const main = k === 'main';
+  const wrap = document.querySelector(main ? '#view-game .board-wrap' : '#view-kfc .board-wrap'), board = $(main ? 'board' : 'kboard');
+  const flip = main ? S.flip : KFC.flip, st = UA[k];
+  let svg = document.getElementById('ua-' + k);
+  const items = st.list.concat(st.drag && st.drag.to ? [st.drag] : []);
+  if (!wrap || !board || $(main ? 'view-game' : 'view-kfc').classList.contains('hidden') || !items.length) { if (svg) svg.remove(); return; }
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'ua-' + k; svg.setAttribute('viewBox', '0 0 8 8'); svg.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(svg);
+  }
+  svg.style.cssText = `position:absolute;left:${board.offsetLeft}px;top:${board.offsetTop}px;width:${board.offsetWidth}px;height:${board.offsetHeight}px;pointer-events:none;z-index:8;overflow:visible`;
+  const ctr = ([f, r]) => [(flip ? 7 - f : f) + .5, (flip ? r : 7 - r) + .5], n = v => v.toFixed(3);
+  svg.innerHTML = items.map(a => {
+    const col = UA_COL[a.c] || UA_COL.g, [x1, y1] = ctr(a.from), [x2, y2] = ctr(a.to);
+    if (a.from[0] === a.to[0] && a.from[1] === a.to[1]) return `<circle cx="${n(x1)}" cy="${n(y1)}" r="0.45" fill="none" stroke="${col}" stroke-width="0.075" opacity="0.8"/>`;
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
+    const head = 0.52, half = 0.3, bx = x2 - ux * head, by = y2 - uy * head;
+    return `<g opacity="0.82"><line x1="${n(x1)}" y1="${n(y1)}" x2="${n(bx + ux * 0.05)}" y2="${n(by + uy * 0.05)}" stroke="${col}" stroke-width="0.18" stroke-linecap="round"/>` +
+      `<polygon points="${n(x2)},${n(y2)} ${n(bx - uy * half)},${n(by + ux * half)} ${n(bx + uy * half)},${n(by - ux * half)}" fill="${col}"/></g>`;
+  }).join('');
+}
+function bindUserArrows(el, k, flipOf) {
+  const sqAt = e => {
+    const r = el.getBoundingClientRect(), fl = flipOf();
+    const c = Math.max(0, Math.min(7, Math.floor((e.clientX - r.left) / r.width * 8))), rr = Math.max(0, Math.min(7, Math.floor((e.clientY - r.top) / r.height * 8)));
+    return [fl ? 7 - c : c, fl ? rr : 7 - rr];
+  };
+  const colorOf = e => e.shiftKey ? 'r' : (e.ctrlKey || e.metaKey) ? 'b' : e.altKey ? 'y' : 'g';
+  const same = (a, b) => a[0] === b[0] && a[1] === b[1];
+  el.addEventListener('contextmenu', e => e.preventDefault());
+  el.addEventListener('pointerdown', e => {
+    if (e.button === 0) { if (UA[k].list.length) uaClear(k); return; }
+    if (e.button !== 2) return;
+    e.preventDefault();
+    UA[k].drag = {from: sqAt(e), to: null, c: colorOf(e)};
+    try { el.setPointerCapture(e.pointerId); } catch (x) { /* not essential */ }
+  });
+  el.addEventListener('pointermove', e => {
+    const d = UA[k].drag; if (!d) return;
+    const t = sqAt(e);
+    if (!d.to || !same(d.to, t)) { d.to = t; d.c = colorOf(e); uaDraw(k); }
+  });
+  el.addEventListener('pointerup', e => {
+    if (e.button !== 2 || !UA[k].drag) return;
+    const d = UA[k].drag, to = sqAt(e), c = colorOf(e), L = UA[k].list;
+    UA[k].drag = null;
+    const i = L.findIndex(a => same(a.from, d.from) && same(a.to, to));
+    if (i >= 0) { const was = L[i].c; L.splice(i, 1); if (was !== c) L.push({from: d.from, to, c}); }    // same shape again removes it
+    else L.push({from: d.from, to, c});
+    uaDraw(k);
+  });
+  el.addEventListener('pointercancel', () => { UA[k].drag = null; uaDraw(k); });
 }
 
 function drawPremoveArrow() {
@@ -3649,7 +3786,7 @@ function bindBoard() {
     if (!S.targets.includes(to)) { clearSel(); render(); return; }
     if (premoveWaiting()) queuePremove(from, to); else tryMove(from, to);
   });
-  b.addEventListener('contextmenu', e => { if (S.premove || S.sel) { e.preventDefault(); cancelPremove(); } });   // right-click cancels a premove
+  bindUserArrows(b, 'main', () => S.flip);       // right-click and drag draws arrows
   b.addEventListener('dragend', () => { if (S.sel) { clearSel(); render(); } });
 }
 
@@ -3664,6 +3801,7 @@ const KVAL = {p: 1, n: 3, b: 3, r: 5, q: 9, k: 1000};
 const KLVL = {1: {lo: 2200, hi: 3600, noise: 7, look: false}, 2: {lo: 1100, hi: 2000, noise: 3.5, look: true}, 3: {lo: 550, hi: 1100, noise: 1.2, look: true}, 4: {lo: 250, hi: 520, noise: 0.35, look: true}};
 
 function kfcStop() {
+  if (KFC.rep && KFC.rep.timer) { clearInterval(KFC.rep.timer); KFC.rep.timer = null; }
   if (!KFC.on && !KFC.tick) return;
   KFC.on = false;
   clearInterval(KFC.tick); KFC.tick = null; clearTimeout(KFC.botT); KFC.botT = null;
@@ -3676,12 +3814,8 @@ function kfcStart(mode, level, cdSec, color) {
   KFC.human = mode === 'bot' ? color : null;                 // null: both sides are human
   KFC.flip = mode === 'bot' && color === 'b';
   KFC.sel = {w: null, b: null}; KFC.active = color || 'w'; KFC.over = null; KFC.nextId = 1; KFC.last = null; KFC.lastSig = ''; KFC.caps = {w: [], b: []};
-  KFC.pieces = []; KFC.grid = Array.from({length: 8}, () => Array(8).fill(null)); KFC.els = {};
-  const back = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
-  for (let x = 0; x < 8; x++) {
-    kfcAdd(back[x], 'w', x, 0); kfcAdd('p', 'w', x, 1);
-    kfcAdd('p', 'b', x, 6); kfcAdd(back[x], 'b', x, 7);
-  }
+  KFC.els = {}; KFC.names = null; KFC.hist = []; KFC.rep = null;
+  kfcSetupPieces();
   const now = Date.now();
   KFC.pieces.forEach(q => { q.ready = now + 1500; });         // a short moment to look at the board before the fight
   KFC.t0 = now + 1500; KFC.go = false; KFC.endAt = 0; KFC.log = []; KFC.rdy = '';
@@ -3692,6 +3826,15 @@ function kfcStart(mode, level, cdSec, color) {
   kfcBuildBoard(); kfcRenderPieces(); kfcBar(); kfcStatus(); kfcControls();
   clearInterval(KFC.tick); KFC.tick = setInterval(kfcLoop, 40);
   if (mode === 'bot') kfcScheduleBot(1500);
+}
+function kfcSetupPieces() {
+  KFC.nextId = 1; KFC.caps = {w: [], b: []};
+  KFC.pieces = []; KFC.grid = Array.from({length: 8}, () => Array(8).fill(null));
+  const back = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'];
+  for (let x = 0; x < 8; x++) {
+    kfcAdd(back[x], 'w', x, 0); kfcAdd('p', 'w', x, 1);
+    kfcAdd('p', 'b', x, 6); kfcAdd(back[x], 'b', x, 7);
+  }
 }
 function kfcAdd(t, c, x, y) {
   const q = {id: KFC.nextId++, t, c, x, y, ready: 0, mv: null, dead: false};
@@ -3707,6 +3850,7 @@ function kfcBuildBoard() {
   }
   b.innerHTML = h; b.appendChild(layer); layer.innerHTML = '';
   KFC.els = {};
+  uaDraw('kfc');
 }
 const kfcPos = (x, y) => `translate(${(KFC.flip ? 7 - x : x) * 100}%,${(KFC.flip ? y : 7 - y) * 100}%)`;
 
@@ -3813,6 +3957,7 @@ function kfcLand(q) {
   if (q.t === 'p' && (q.y === 7 || q.y === 0)) { q.t = 'q'; if (el) el.dataset.pc = q.c + 'q'; txt += '=Q'; sfx('promote'); }
   else if (target) sfx('capture');
   kfcLog(q.c, txt, now);
+  KFC.hist.push([m.fx, m.fy, m.tx, m.ty, Math.max(0, now - KFC.t0), txt.indexOf('=Q') >= 0 ? 1 : 0]);
   if (target && target.t === 'k') kfcEnd(q.c);
   else kfcCheckDraw();
   KFC.lastSig = '';
@@ -3968,13 +4113,13 @@ function kfcBotThink() {
 }
 
 /* ---- sidebar bits ---- */
-function kfcName(c) { return KFC.mode === 'local' ? (c === 'w' ? 'White' : 'Black') : (c === KFC.human ? (S.profile ? S.profile.username : 'You') : 'Computer'); }
+function kfcName(c) { if (KFC.names) return KFC.names[c]; return KFC.mode === 'local' ? (c === 'w' ? 'White' : 'Black') : (c === KFC.human ? (S.profile ? S.profile.username : 'You') : 'Computer'); }
 function kfcBar() {
   const mat = c => KFC.caps[c].reduce((a, t) => a + (t === 'k' ? 0 : KVAL[t]), 0);
   const draw = (id, c) => {
     const o = c === 'w' ? 'b' : 'w', diff = mat(c) - mat(o);
     const caps = KFC.caps[c].slice().sort((a, b) => KVAL[b] - KVAL[a]).map(t => `<i class="kcap" data-pc="${o}${t}"></i>`).join('');
-    $(id).innerHTML = `<span class="kdot ${c}"></span><b class="kpn">${esc(kfcName(c))}</b><span class="krdy" data-c="${c}"></span><span class="kcaps">${caps}${diff > 0 ? `<em>+${diff}</em>` : ''}</span>`;
+    $(id).innerHTML = `<span class="kdot ${c}"></span><b class="kpn">${esc(kfcName(c))}</b>${KFC.mode === 'replay' ? '' : `<span class="krdy" data-c="${c}"></span>`}<span class="kcaps">${caps}${diff > 0 ? `<em>+${diff}</em>` : ''}</span>`;
   };
   const top = KFC.flip ? 'w' : 'b';
   draw('kpbar-top', top); draw('kpbar-bot', top === 'w' ? 'b' : 'w');
@@ -3983,6 +4128,14 @@ function kfcBar() {
 function kfcStatus() {
   const el = $('kstatus');
   el.className = 'kcard kstatus';
+  if (KFC.mode === 'replay') {
+    const R = KFC.rep, n = KFC.hist.length;
+    if (R.i === n && R.res) {
+      el.classList.add('done');
+      el.textContent = R.res === 'd' ? 'Draw. Only kings were left.' : (R.res === 'w' ? kfcName('w') : kfcName('b')) + ' was victorious. King captured.';
+    } else el.textContent = R.i === 0 ? 'Replay: starting position.' : `Replay: move ${R.i} of ${n}.`;
+    return;
+  }
   if (!KFC.over) { el.textContent = !KFC.go ? 'Get ready…' : (KFC.mode === 'local' ? 'Both sides move at once. Go!' : 'Go! Move any piece that is ready.'); return; }
   el.classList.add('done');
   const w = KFC.over.winner;
@@ -3994,11 +4147,109 @@ function kfcStatus() {
 function kfcControls() {
   const box = $('kcontrols');
   box.innerHTML = '';
-  const add = (label, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = fn; box.appendChild(b); };
+  const add = (label, fn, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (cls ? ' ' + cls : ''); b.textContent = label; b.onclick = fn; box.appendChild(b); return b; };
+  const flip = () => { KFC.flip = !KFC.flip; kfcBuildBoard(); kfcRenderPieces(); KFC.lastSig = ''; kfcBar(); if (KFC.mode === 'replay') { KFC.lastSig = ''; kfcPaintSel(Date.now()); } };
+  if (KFC.mode === 'replay') {
+    const R = KFC.rep, n = KFC.hist.length;
+    add('First', () => kfcStep(-n, false)).title = 'First';
+    add('Back', () => kfcStep(-1, false)).title = 'Back';
+    add(R.timer ? 'Pause' : 'Play', kfcPlayToggle, 'primary');
+    add('Next', () => kfcStep(1, true)).title = 'Next';
+    add('Last', () => kfcStep(n, false)).title = 'Last';
+    add('Flip board', flip);
+    add('Save game link', saveKfcGame);
+    add('Leave', leaveKfc, 'danger');
+    return;
+  }
   add(KFC.over ? 'Rematch' : 'Restart', () => kfcStart(KFC.mode, KFC.level, KFC.cd / 1000, KFC.human || 'w'), KFC.over ? 'primary' : '');
-  add('Flip board', () => { KFC.flip = !KFC.flip; kfcBuildBoard(); kfcRenderPieces(); KFC.lastSig = ''; kfcBar(); });
+  add('Flip board', flip);
+  add('Save game link', saveKfcGame);
   add('Leave', leaveKfc, 'danger');
 }
+/* ---- save and replay ---- */
+async function saveKfcGame() {
+  if (!KFC.hist || !KFC.hist.length) return toast('Make a move first, then save.', true);
+  const d = {v: 1, k: 'kfc', w: cleanName(kfcName('w'), 'White'), b: cleanName(kfcName('b'), 'Black'), cd: Math.round(KFC.cd / 1000), t: Date.now(), h: KFC.hist};
+  if (KFC.mode === 'replay') { if (KFC.rep.res) d.r = KFC.rep.res; }
+  else if (KFC.over) d.r = KFC.over.winner || 'd';
+  try { showSaveModal(await packSave(d)); } catch (e) { toast('Could not build the link.', true); }
+}
+
+// Applies one saved move to the board state and returns its text
+function kfcApplyEntry(e) {
+  const [fx, fy, tx, ty, , pr] = e, q = KFC.grid[fy][fx];
+  if (!q) return null;
+  const v = KFC.grid[ty][tx], sqn = FILES[tx] + (ty + 1);
+  let txt = q.t === 'p' ? (v ? FILES[fx] + 'x' + sqn : sqn) : q.t.toUpperCase() + (v ? 'x' : '') + sqn;
+  if (v && v !== q) { v.dead = true; KFC.caps[q.c].push(v.t); KFC.pieces = KFC.pieces.filter(z => z !== v); }
+  KFC.grid[fy][fx] = null; KFC.grid[ty][tx] = q; q.x = tx; q.y = ty;
+  if (pr) { q.t = 'q'; txt += '=Q'; }
+  KFC.last = {from: [fx, fy], to: [tx, ty]};
+  return {txt, c: q.c};
+}
+
+function kfcOpenReplay(d) {
+  teardownOnline(); kfcStop();
+  S.mode = 'kfc'; S.game = null; S.over = null; S.review = null; clearSel();
+  Object.assign(KFC, {on: false, mode: 'replay', level: 0, cd: (d.cd || 5) * 1000, human: null, flip: false, names: {w: d.w, b: d.b},
+    hist: d.h, rep: {i: 0, timer: null, res: d.r === 'w' || d.r === 'b' || d.r === 'd' ? d.r : null}, over: null, go: true, t0: 0, endAt: 0,
+    sel: {w: null, b: null}, lastSig: '', last: null, els: {}});
+  // one pass to write the move list
+  kfcSetupPieces();
+  const rows = d.h.map((e, i) => {
+    const r = kfcApplyEntry(e);
+    return r ? `<div class="kmv" data-i="${i}"><span class="kt">${kfcFmt(+e[4] || 0)}</span><span class="kdot ${r.c}"></span><span class="kx">${esc(r.txt)}</span></div>` : '';
+  }).join('');
+  showView('kfc');
+  $('kmoves').innerHTML = rows;
+  $('ktitle').innerHTML = `<b>Kung Fu Chess</b><span>Replay · ${Math.round(KFC.cd / 1000)}s cooldown</span>`;
+  kfcBuildBoard();
+  kfcReplayTo(d.h.length, false);
+  kfcControls();
+}
+
+function kfcReplayTo(n, animate) {
+  const R = KFC.rep, H = KFC.hist;
+  n = Math.max(0, Math.min(H.length, n)); R.i = n;
+  kfcSetupPieces(); KFC.last = null;
+  for (let i = 0; i < n; i++) kfcApplyEntry(H[i]);
+  const keep = new Set(KFC.pieces.map(q => q.id));
+  Object.keys(KFC.els).forEach(id => { if (!keep.has(+id)) { KFC.els[id].remove(); delete KFC.els[id]; } });
+  kfcRenderPieces();                                   // creates any piece that is missing and sets its picture
+  KFC.pieces.forEach(q => {
+    const el = KFC.els[q.id];
+    el.style.setProperty('--kdur', animate ? '380ms' : '0ms');
+    el.style.transform = kfcPos(q.x, q.y);
+  });
+  KFC.lastSig = ''; kfcPaintSel(Date.now());
+  kfcBar(); kfcStatus();
+  $('kclock').textContent = kfcFmt(n ? +H[n - 1][4] || 0 : 0);
+  const box = $('kmoves');
+  box.querySelectorAll('.kmv').forEach(r => r.classList.toggle('cur', +r.dataset.i === n - 1));
+  const cur = box.querySelector('.kmv.cur');
+  if (cur) cur.scrollIntoView({block: 'nearest'});
+}
+function kfcStep(delta, animate) {
+  if (KFC.mode !== 'replay') return;
+  if (Math.abs(delta) > 1 || delta < 0) kfcPlayStop();
+  kfcReplayTo(KFC.rep.i + delta, animate && delta === 1);
+}
+function kfcPlayStop() {
+  const R = KFC.rep;
+  if (R && R.timer) { clearInterval(R.timer); R.timer = null; kfcControls(); }
+}
+function kfcPlayToggle() {
+  const R = KFC.rep;
+  if (R.timer) return kfcPlayStop();
+  if (R.i >= KFC.hist.length) kfcReplayTo(0, false);
+  R.timer = setInterval(() => {
+    if (R.i >= KFC.hist.length) return kfcPlayStop();
+    kfcReplayTo(R.i + 1, true);
+    if (R.i >= KFC.hist.length) kfcPlayStop();
+  }, 650);
+  kfcControls();
+}
+
 function leaveKfc() { kfcStop(); S.mode = null; if (S.user || S.guest) goLobby(); else showView('auth'); }
 
 function bindKfc() {
@@ -4050,11 +4301,149 @@ function bindKfc() {
   };
   b.addEventListener('pointerup', e => finish(e, false));
   b.addEventListener('pointercancel', e => finish(e, true));
-  b.addEventListener('contextmenu', e => { e.preventDefault(); KFC.sel = {w: null, b: null}; KFC.lastSig = ''; kfcPaintSel(Date.now()); });
+  bindUserArrows(b, 'kfc', () => KFC.flip);
+  $('kmoves').addEventListener('click', e => {
+    const r = e.target.closest('.kmv[data-i]');
+    if (r && KFC.mode === 'replay') { kfcPlayStop(); kfcReplayTo(+r.dataset.i + 1, false); }
+  });
+  document.addEventListener('keydown', e => {
+    if (S.mode !== 'kfc' || KFC.mode !== 'replay' || $('modal-root').firstChild) return;
+    if (/^(INPUT|TEXTAREA)$/.test((e.target || {}).tagName || '')) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); kfcStep(-1, false); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); kfcStep(1, true); }
+    else if (e.key === 'Home') { e.preventDefault(); kfcStep(-KFC.hist.length, false); }
+    else if (e.key === 'End') { e.preventDefault(); kfcStep(KFC.hist.length, false); }
+  });
+}
+
+/* ═════════════ Save games as links ═════════════
+   A saved game is not stored anywhere: every move is packed (and compressed when the browser can) into the
+   link itself, after "#sg=". The part after "#" never goes to any server, so it works on any host and
+   anyone who opens the link can replay the game. */
+function toB64u(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function fromB64u(str) {
+  const b = atob(str.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((str.length + 3) % 4));
+  const out = new Uint8Array(b.length);
+  for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
+  return out;
+}
+async function packSave(obj) {
+  let bytes = new TextEncoder().encode(JSON.stringify(obj)), tag = 'j';
+  if (typeof CompressionStream === 'function') {
+    try {
+      bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+      tag = 'z';
+    } catch (e) { tag = 'j'; bytes = new TextEncoder().encode(JSON.stringify(obj)); }
+  }
+  return tag + toB64u(bytes);
+}
+async function unpackSave(str) {
+  const tag = str[0];
+  let bytes = fromB64u(str.slice(1));
+  if (tag === 'z') bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  else if (tag !== 'j') throw new Error('unknown format');
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+const saveLinkOf = payload => location.href.split('#')[0] + '#sg=' + payload;
+const cleanName = (n, d) => String(n == null ? d : n).replace(/[\u0000-\u001f]/g, '').slice(0, 30) || d;
+
+function showSaveModal(payload) {
+  const link = saveLinkOf(payload);
+  if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => toast('Game link copied.')).catch(() => {});
+  const root = modal('Game saved as a link',
+    `<p class="muted small" style="margin:0 0 10px">The whole game is inside this link, so nothing is saved to the database. Open it any time, or send it to anyone, to replay the game.</p><textarea id="sg-link" readonly rows="4" style="width:100%;font:12px/1.35 monospace;word-break:break-all;resize:vertical"></textarea><p class="muted small" style="margin:8px 0 0">${link.length.toLocaleString()} characters</p>`,
+    [{label: 'Copy link', cls: 'primary', onClick: () => {
+      const ta = $('sg-link'); ta.select();
+      if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => toast('Game link copied.')).catch(() => { try { document.execCommand('copy'); toast('Game link copied.'); } catch (e) { /* select-all is enough */ } });
+      else { try { document.execCommand('copy'); toast('Game link copied.'); } catch (e) { /* ignore */ } }
+      return false;
+    }}, {label: 'Close'}], true);
+  const ta = root.querySelector('#sg-link'); ta.value = link; ta.onfocus = () => ta.select();
+}
+
+async function saveChessGame() {
+  if (!S.game) return;
+  const moves = S.game.history();
+  if (!moves.length) return toast('Make a move first, then save.', true);
+  const d = {v: 1, k: 'chess', m: moves, w: cleanName(playerInfo('w').name, 'White'), b: cleanName(playerInfo('b').name, 'Black'), t: Date.now()};
+  if (S.over && S.over.result && S.over.result !== '*') { d.r = S.over.result; d.why = String(S.over.reason || '').slice(0, 40); }
+  try { showSaveModal(await packSave(d)); } catch (e) { toast('Could not build the link.', true); }
+}
+
+function openSavedChess(d) {
+  const g = new Chess();
+  for (const san of d.m) { if (!g.move(san)) break; }
+  if (!g.history().length) throw new Error('no moves');
+  teardownOnline();
+  S.mode = 'local'; S.tc = 0; S.color = 'w'; S.flip = false; S.botMatchId = null; S.botElo = 0; S.aiThinking = false; S.premove = null;
+  S.game = g; S.saved = {w: d.w, b: d.b};
+  S.over = d.r ? {result: d.r, reason: d.why || 'saved game'} : (gameEnd(g) || {result: '*', reason: 'saved game'});
+  S.endPlayed = S.over; S.sfxPly = -1;
+  clearSel(); syncLast();
+  showView('game'); render();
+  startReview();                                  // opens on the final position with the Overview controls
+}
+
+// Checks a decoded link before anything is built from it
+function validSave(d) {
+  if (!d || d.v !== 1) return false;
+  if (d.k === 'chess') return Array.isArray(d.m) && d.m.length > 0 && d.m.length <= 1200 && d.m.every(x => typeof x === 'string' && /^[A-Za-z0-9=+#\-]{2,10}$/.test(x));
+  if (d.k === 'kfc') return Array.isArray(d.h) && d.h.length > 0 && d.h.length <= 4000 && d.h.every(e => Array.isArray(e) && e.length >= 4 && e.slice(0, 4).every(n => Number.isInteger(n) && n >= 0 && n <= 7));
+  return false;
+}
+async function loadSavedPayload(str) {
+  try {
+    const d = await unpackSave(String(str).trim());
+    if (!validSave(d)) throw new Error('bad');
+    d.w = cleanName(d.w, 'White'); d.b = cleanName(d.b, 'Black');
+    if (d.k === 'chess') openSavedChess(d); else kfcOpenReplay(d);
+    return true;
+  } catch (e) {
+    toast('That game link could not be read.', true);
+    return false;
+  }
+}
+function takeSavedHash() {
+  const m = /^#sg=([A-Za-z0-9_-]+)$/.exec(location.hash);
+  return m ? m[1] : null;
+}
+function openSavedPrompt() {
+  const root = modal('Open saved game', '<p class="muted small" style="margin:0 0 10px">Paste a saved game link here.</p><textarea id="sg-in" rows="4" placeholder="https://…#sg=…" style="width:100%;font:12px/1.35 monospace;word-break:break-all"></textarea>',
+    [{label: 'Open', cls: 'primary', onClick: () => {
+      const v = $('sg-in').value.trim(), i = v.indexOf('#sg=');
+      const code = i >= 0 ? v.slice(i + 4) : v.replace(/^sg=/, '');
+      if (!code) { toast('Paste a game link first.', true); return false; }
+      closeModal(); loadSavedPayload(code); return false;
+    }}, {label: 'Cancel'}], true);
+  root.querySelector('#sg-in').focus();
+}
+
+/* ═════════════ Board theme and piece set (kept in this browser only) ═════════════ */
+const UIPREF = {board: 'brown', pieces: 'cburnett'};
+const UI_BOARDS = ['brown', 'green', 'blue', 'gray', 'teal'];
+function applyUiPrefs() {
+  ['view-game', 'view-kfc'].forEach(id => { const v = $(id); if (v) { v.dataset.board = UIPREF.board; v.dataset.pieces = UIPREF.pieces; } });
+  document.querySelectorAll('#board-themes button').forEach(b => b.classList.toggle('on', b.dataset.theme === UIPREF.board));
+  document.querySelectorAll('#piece-sets button').forEach(b => b.classList.toggle('on', b.dataset.set === UIPREF.pieces));
+}
+function bindUiPrefs() {
+  try {
+    const j = JSON.parse(localStorage.getItem('pal_ui') || '{}');
+    if (UI_BOARDS.includes(j.board)) UIPREF.board = j.board;
+    if (j.pieces === 'classic') UIPREF.pieces = 'classic';
+  } catch (e) { /* storage unavailable: defaults are fine */ }
+  const save = () => { try { localStorage.setItem('pal_ui', JSON.stringify(UIPREF)); } catch (e) { /* ignore */ } applyUiPrefs(); };
+  $('board-themes').addEventListener('click', e => { const b = e.target.closest('button[data-theme]'); if (b) { UIPREF.board = b.dataset.theme; save(); } });
+  $('piece-sets').addEventListener('click', e => { const b = e.target.closest('button[data-set]'); if (b) { UIPREF.pieces = b.dataset.set; save(); } });
+  applyUiPrefs();
 }
 
 function playerInfo(color) {
-  if (S.mode === 'local') return {name: color === 'w' ? 'White' : 'Black'};
+  if (S.mode === 'local') return {name: (S.saved && S.saved[color]) || (color === 'w' ? 'White' : 'Black')};
   if (S.mode === 'ai') {
     if (color === S.color) return {name: S.profile ? S.profile.username : 'You', rating: S.profile && !S.profile.is_guest ? ratingOf(S.profile, S.tc) : null};
     if (S.botElo) return {name: S.botName, sub: String(S.botShown || S.botElo), rating: S.botShown || S.botElo};
@@ -4083,13 +4472,14 @@ function fillBar(el, color, g) {
     const ms = clockMs(color);
     clk = `<span class="clk${isRunning(color) ? ' run' : ''}${ms < 10000 ? ' low' : ''}" data-c="${color}">${fmtClock(ms)}</span>`;
   }
-  el.innerHTML = `<span class="dot"></span><span class="pname">${esc(info.name)}${info.sub ? `<em>${esc(info.sub)}</em>` : ''}${info.rating != null ? titleBadge(info.rating) : ''}</span><span class="caps">${cap.out[color].map(t => `<span class="cp ${opp}">${GLYPH[t]}</span>`).join('')}</span><span class="adv">${cap.diff[color] > 0 ? '+' + cap.diff[color] : ''}</span>${clk}`;
+  el.innerHTML = `<span class="dot"></span><span class="pname">${esc(info.name)}${info.sub ? `<em>${esc(info.sub)}</em>` : ''}${info.rating != null ? titleBadge(info.rating) : ''}</span><span class="caps">${cap.out[color].map(t => `<span class="cp ${opp}" data-pc="${opp}${t}">${GLYPH[t]}</span>`).join('')}</span><span class="adv">${cap.diff[color] > 0 ? '+' + cap.diff[color] : ''}</span>${clk}`;
 }
 
 function statusText() {
   const g = S.game;
   if (S.over) {
     const {result, reason} = S.over;
+    if (result === '*') return `Saved game. ${g.turn() === 'w' ? 'White' : 'Black'} to move.`;
     if (result === '1/2-1/2') return `Draw by ${reason}.`;
     const wWon = result === '1-0';
     const winner = wWon ? 'White' : 'Black', loser = wWon ? 'Black' : 'White';
@@ -4165,10 +4555,12 @@ function renderSide(vg) {
     add('Last', () => { stopAuto(); setPly(total); }).disabled = r.ply === total;
     add(r.timer ? 'Pause' : 'Auto-play', toggleAuto);
     add('Flip board', () => { S.flip = !S.flip; render(); });
+  if (total) add('Save game link', saveChessGame);
     add('Exit overview', () => { endReview(); render(); }, 'primary');
     return;
   }
   add('Flip board', () => { S.flip = !S.flip; render(); });
+  if (total) add('Save game link', saveChessGame);
   if (S.premove) add('Cancel premove', cancelPremove, 'danger');
   if (S.over && total) add('Overview', startReview, 'primary');
   if (S.mode === 'ai' || S.mode === 'local') {
@@ -4528,17 +4920,20 @@ function bindStatic() {
     const keys = {ArrowLeft: S.review.ply - 1, ArrowRight: S.review.ply + 1, Home: 0, End: total};
     if (e.key in keys) { e.preventDefault(); stopAuto(); setPly(keys[e.key]); }
   });
-  bindBoard(); bindKfc();
-  window.addEventListener('resize', drawPremoveArrow);
+  bindBoard(); bindKfc(); bindUiPrefs();
+  window.addEventListener('resize', () => { drawPremoveArrow(); uaDraw('main'); uaDraw('kfc'); });
   miniBoard($('mini'), 'r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4');
 }
 
 (async function init() {
+  const savedHash = takeSavedHash();                  // read first: the invite-code cleanup below rewrites the URL
   S.pendingCode = takeUrlInviteCode();
   bindStatic();
   const {data} = await sb.auth.getSession();
   if (data && data.session) await syncAccount(); else showView('auth');
   if (!S.user && !S.guest) showView('auth');   // session exists but isn't linked to an account
+  if (savedHash) loadSavedPayload(savedHash);   // a shared game link opens straight into the replay, signed in or not
+  window.addEventListener('hashchange', () => { const h = takeSavedHash(); if (h) loadSavedPayload(h); });
 })();
 
 })();
