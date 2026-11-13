@@ -12,20 +12,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#161512; --panel:#262421; --panel2:#302e2b; --line:#3d3a35;
-  --text:#e0deda; --muted:#8a8782;
+  --ink:#12202b; --panel:#1a2b38; --panel2:#223646; --line:#2f4658;
+  --text:#e8eef3; --muted:#93a8b8;
   --sea:#d3e2da; --deep:#5a8580;
-  --gold:#9ed05a; --danger:#e5645a; --ok:#59c38e;
+  --gold:#f2b83c; --danger:#e5645a; --ok:#59c38e;
   --f-head:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
   --f-body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
   --f-piece:'Noto Sans Symbols 2','Segoe UI Symbol','Apple Symbols','DejaVu Sans','Arial Unicode MS',sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-:root{--pagebg:#161512}
-html{background:#161512}
-html,body{margin:0;color:var(--text);font:400 16px/1.5 var(--f-body);-webkit-text-size-adjust:100%}
-body{background:var(--pagebg);background-attachment:fixed;min-height:100vh}
+html,body{margin:0;background:var(--ink);color:var(--text);font:400 16px/1.5 var(--f-body);-webkit-text-size-adjust:100%}
 h1,h2,h3,h4{font-family:var(--f-head);margin:0;line-height:1.15;letter-spacing:-.01em}
 h1{font-size:clamp(34px,5.5vw,58px);font-weight:800;letter-spacing:-.03em}
 h2{font-size:26px;font-weight:700}
@@ -48,10 +45,8 @@ button{font-family:inherit}
 /* controls */
 .btn{font:600 14px var(--f-body);padding:10px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;transition:background .15s,border-color .15s}
 .btn:hover:not(:disabled){border-color:var(--muted)}
-.btn.primary{background:#629924;color:#fff;border-color:#629924}
-.btn.primary:hover:not(:disabled){background:#72ad2b;border-color:#72ad2b}
-.btn.primary{background:#629924;border-color:#629924;color:#fff}
-.btn.primary:hover:not(:disabled){background:#72ad2b;border-color:#72ad2b}
+.btn.primary{background:var(--gold);color:#241a05;border-color:var(--gold)}
+.btn.primary:hover:not(:disabled){background:#f7c75b;border-color:#f7c75b}
 .btn.danger{border-color:var(--danger);color:#ffb3ac}
 .btn.ghost{background:transparent}
 .btn.sm{padding:6px 12px;font-size:13px}
@@ -163,7 +158,7 @@ label input{margin-top:6px}
 .kstatus.done.lose{border-left-color:var(--danger)}
 .kctl{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px}
 .kmv[data-i]{cursor:pointer}
-.kmv.cur{background:rgba(158,208,90,.3)!important}
+.kmv.cur{background:rgba(242,184,60,.3)!important}
 .krules{padding:2px 16px 12px;font-size:13px;color:var(--muted)}
 .krules summary{cursor:pointer;padding:10px 0;font-weight:700;color:var(--text)}
 .krules ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
@@ -188,7 +183,7 @@ label input{margin-top:6px}
 .sq.light .co{color:var(--deep)} .sq.dark .co{color:var(--sea)}
 .pbar{display:flex;flex-wrap:wrap;row-gap:6px;align-items:center;gap:10px;min-height:44px;font-weight:600}
 .pbar .dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
-.pbar.turn .dot{background:var(--gold);box-shadow:0 0 0 4px rgba(158,208,90,.25)}
+.pbar.turn .dot{background:var(--gold);box-shadow:0 0 0 4px rgba(242,184,60,.25)}
 .pbar .pname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pbar .pname em{font-style:normal;color:var(--muted);font-weight:500;margin-left:6px}
 .pbar .caps{display:flex;align-items:center;margin-left:auto;padding-right:4px}
@@ -230,27 +225,50 @@ label input{margin-top:6px}
 .pset button{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font:600 13px var(--f-body);cursor:pointer}
 .pset button.on{background:var(--gold);border-color:var(--gold);color:#241a05}
 
-/* New look: header and main menu */
-.top,#view-lobby{--ink:#161512;--panel:#262421;--panel2:#302e2b;--line:#3d3a35;--muted:#8a8782;--gold:#9ed05a;--text:#e0deda}
-.top{background:#262421;border-bottom:1px solid #1d1b18;box-shadow:0 2px 6px rgba(0,0,0,.45)}
-.top .btn{border-radius:4px}
-html[data-bg]:not([data-bg="default"]) .top{background:rgba(12,14,18,.62);backdrop-filter:blur(8px)}
-#view-lobby{min-height:calc(100vh - 62px)}
-#view-lobby .btn{border-radius:4px}
-#view-lobby .btn.primary,.top .btn.primary{background:#629924;border-color:#629924;color:#fff}
-#view-lobby .btn.primary:hover:not(:disabled){background:#72ad2b;border-color:#72ad2b}
-#view-lobby h2,#view-lobby h3{color:#e8e6e3}
-#view-lobby .acc,#view-lobby .acc-link{border:0;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
-#view-lobby .acc.open{box-shadow:inset 4px 0 0 #629924,0 2px 6px rgba(0,0,0,.4)}
-#view-lobby .acc-link:hover,#view-lobby .acc-h:hover{background:#302e2b}
-#view-lobby .acc-b{border-top:1px solid #35322d}
-#view-lobby .acc-t b{color:#e8e6e3}
-#view-lobby input,#view-lobby select{background:#1b1a18;border-radius:4px}
-#view-lobby .seg{border-radius:4px}
-#view-lobby .seg button{background:#1b1a18}
-#view-lobby .seg button.on{background:#302e2b;box-shadow:inset 0 -2px 0 #629924}
-#view-lobby .glist li{border-bottom-color:#35322d}
-#view-lobby .me-rate{color:#9ed05a}
+/* Dark theme (Lichess / chess.com style). Classic keeps the original colours. */
+html[data-theme="dark"]{--ink:#161512;--panel:#262421;--panel2:#302e2b;--line:#3d3a35;--text:#e0deda;--muted:#8a8782;--gold:#9ed05a;--ok:#9ed05a}
+html[data-theme="dark"] .btn{border-radius:4px}
+html[data-theme="dark"] .btn.primary{background:#629924;border-color:#629924;color:#fff}
+html[data-theme="dark"] .btn.primary:hover:not(:disabled){background:#72ad2b;border-color:#72ad2b}
+html[data-theme="dark"] .top{background:#262421;border-bottom:1px solid #1d1b18;box-shadow:0 2px 6px rgba(0,0,0,.45)}
+html[data-theme="dark"] #view-lobby{min-height:calc(100vh - 62px)}
+html[data-theme="dark"] #view-lobby h2,html[data-theme="dark"] #view-lobby h3{color:#e8e6e3}
+html[data-theme="dark"] #view-lobby .acc,html[data-theme="dark"] #view-lobby .acc-link{border:0;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+html[data-theme="dark"] #view-lobby .acc.open{box-shadow:inset 4px 0 0 #629924,0 2px 6px rgba(0,0,0,.4)}
+html[data-theme="dark"] #view-lobby .acc-link:hover,html[data-theme="dark"] #view-lobby .acc-h:hover{background:#302e2b}
+html[data-theme="dark"] #view-lobby .acc-b{border-top:1px solid #35322d}
+html[data-theme="dark"] #view-lobby .acc-t b{color:#e8e6e3}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#1b1a18}
+html[data-theme="dark"] .seg{border-radius:4px}
+html[data-theme="dark"] .seg button{background:#1b1a18}
+html[data-theme="dark"] .seg button.on{background:#302e2b;box-shadow:inset 0 -2px 0 #629924}
+html[data-theme="dark"] #view-lobby .glist li{border-bottom-color:#35322d}
+html[data-theme="dark"] #board,html[data-theme="dark"] #kboard{border-radius:3px;box-shadow:0 2px 8px rgba(0,0,0,.65)}
+html[data-theme="dark"] #board .sq.last::before,html[data-theme="dark"] #kboard .sq.klast::before{background:rgba(155,199,0,.41)}
+html[data-theme="dark"] #board .sq.sel,html[data-theme="dark"] #kboard .sq.ksel{box-shadow:none;background-image:linear-gradient(rgba(20,85,30,.5),rgba(20,85,30,.5))}
+html[data-theme="dark"] #kboard .sq.ksel2{box-shadow:none;background-image:linear-gradient(rgba(20,30,110,.5),rgba(20,30,110,.5))}
+html[data-theme="dark"] #board .sq.target::after,html[data-theme="dark"] #kboard .sq.target::after{width:30%;height:30%;background:rgba(20,85,0,.5)}
+html[data-theme="dark"] #board .sq.target.cap::after,html[data-theme="dark"] #kboard .sq.target.cap::after{width:100%;height:100%;border-radius:0;box-shadow:none;background:radial-gradient(transparent 0%,transparent 79%,rgba(20,85,0,.3) 80%)}
+html[data-theme="dark"] #board .sq.target:hover,html[data-theme="dark"] #kboard .sq.target:hover{background-image:linear-gradient(rgba(20,85,30,.3),rgba(20,85,30,.3))}
+html[data-theme="dark"] #view-game .pbar .pname,html[data-theme="dark"] .kplayer .kpn{color:#e8e6e3}
+html[data-theme="dark"] #view-game .pbar.turn .dot{background:#9ed05a;box-shadow:0 0 0 4px rgba(158,208,90,.22)}
+html[data-theme="dark"] #view-game .pbar .clk{background:#302e2b;color:#e8e6e3;border-radius:4px;font-size:22px;min-width:92px}
+html[data-theme="dark"] #view-game .pbar .clk.run{background:#e8e6e3;color:#161512}
+html[data-theme="dark"] #view-game .pbar .clk.low{color:#ff8f86}
+html[data-theme="dark"] #view-game .pbar .clk.run.low{background:#c33;color:#fff}
+html[data-theme="dark"] #view-game .status{background:#262421;border-radius:4px;border-left:4px solid #3d3a35;padding:14px 16px;min-height:0;font-size:17px;color:#e8e6e3;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+html[data-theme="dark"] #view-game .status.done{border-left-color:#629924;background:#2b2a26}
+html[data-theme="dark"] #view-game .moves{background:#262421;border:0;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.4);padding:4px 0}
+html[data-theme="dark"] #view-game .moves li{padding:2px 10px;grid-template-columns:38px 1fr 1fr}
+html[data-theme="dark"] #view-game .moves li:nth-child(odd){background:rgba(255,255,255,.03)}
+html[data-theme="dark"] #view-game .moves .n{color:#77746f}
+html[data-theme="dark"] #view-game .moves span.cur{background:#3b4a25;color:#fff}
+html[data-theme="dark"] #view-game .controls{background:#262421;border-radius:4px;padding:10px 12px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+html[data-theme="dark"] .kcard{border:0;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+html[data-theme="dark"] .kstatus.done{border-left-color:#629924;background:#2b2a26}
+html[data-theme="dark"] .kmv.cur{background:#3b4a25!important}
+html[data-theme="dark"] .set-tile.on{background:rgba(158,208,90,.1)}
+.thm{display:block;width:78px;height:46px;border-radius:6px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
 
 /* Settings */
 .modal.wide{width:min(780px,96vw);max-width:96vw}
@@ -266,7 +284,7 @@ html[data-bg]:not([data-bg="default"]) .top{background:rgba(12,14,18,.62);backdr
 .set-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:8px}
 .set-tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:9px 6px;border-radius:10px;border:2px solid transparent;background:var(--panel2);color:var(--text);font:600 12px var(--f-body);cursor:pointer;text-align:center}
 .set-tile:hover{border-color:var(--line)}
-.set-tile.on{border-color:var(--gold);background:rgba(158,208,90,.1)}
+.set-tile.on{border-color:var(--gold);background:rgba(242,184,60,.1)}
 .bsw{width:46px;height:46px;border-radius:5px;background:conic-gradient(var(--b) 25%,var(--a) 0 50%,var(--b) 0 75%,var(--a) 0);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
 .pts{display:flex;height:46px;align-items:center}
 .pts i{display:block;width:40px;height:40px;margin:0 -3px;background-repeat:no-repeat;background-position:center;background-size:100%}
@@ -284,13 +302,44 @@ html[data-bg]:not([data-bg="default"]) .top{background:rgba(12,14,18,.62);backdr
 #view-game[data-tex="1"] #board,#view-kfc[data-tex="1"] #kboard{background-image:var(--tex);background-size:100% 100%}
 #view-game[data-tex="1"] #board .sq.light,#view-kfc[data-tex="1"] #kboard .sq.light{background-color:transparent}
 #view-game[data-tex="1"] #board .sq.dark,#view-kfc[data-tex="1"] #kboard .sq.dark{background-color:var(--dko)}
-#view-game,#view-kfc{min-height:calc(100vh - 62px)}
+#view-game,#view-kfc{background:var(--pagebg);min-height:calc(100vh - 62px)}
 .set-prevwrap{position:sticky;top:-2px;z-index:3;background:var(--panel);padding:2px 0 10px}
 .set-preview[data-tex="1"]{background-image:var(--tex);background-size:100% 100%}
 .set-preview[data-tex="1"] .pvq{background:transparent}
 .set-preview[data-tex="1"] .pvq.d{background:var(--dko)}
 .bsw.tx{background-color:transparent}
 .bgt{display:block;width:100%;height:46px;border-radius:6px;background:var(--panel2);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+
+/* More interface themes */
+html[data-theme="amoled"]{--ink:#000000;--panel:#0b0b0b;--panel2:#161616;--line:#262626;--text:#eaeaea;--muted:#888888;--gold:#f2b83c;color-scheme:dark}
+html[data-theme="ocean"]{--ink:#071a24;--panel:#0c2a3a;--panel2:#12384d;--line:#1d4a63;--text:#e3f3fa;--muted:#8fb6c9;--gold:#3ecfd8;color-scheme:dark}
+html[data-theme="forest"]{--ink:#0c1a12;--panel:#13271b;--panel2:#1b3626;--line:#28503a;--text:#e6f2ea;--muted:#93b5a0;--gold:#8bd45a;color-scheme:dark}
+html[data-theme="ember"]{--ink:#1d100f;--panel:#2b1816;--panel2:#3a201d;--line:#55302b;--text:#f6e9e4;--muted:#bf9a92;--gold:#ff9d52;color-scheme:dark}
+html[data-theme="purple"]{--ink:#130f22;--panel:#1d1733;--panel2:#281f47;--line:#3b2f66;--text:#eee9fb;--muted:#a99fcf;--gold:#b28cff;color-scheme:dark}
+html[data-theme="rose"]{--ink:#1f1017;--panel:#2e1824;--panel2:#3d2031;--line:#5a3249;--text:#fbe9f0;--muted:#c79aae;--gold:#ff7aa8;color-scheme:dark}
+html[data-theme="nord"]{--ink:#2e3440;--panel:#3b4252;--panel2:#434c5e;--line:#4c566a;--text:#eceff4;--muted:#a3adbf;--gold:#88c0d0;color-scheme:dark}
+html[data-theme="mocha"]{--ink:#1b1512;--panel:#281e19;--panel2:#342720;--line:#4a382e;--text:#f3e8df;--muted:#b49f90;--gold:#d9a066;color-scheme:dark}
+html[data-theme="light"]{--ink:#eef1f4;--panel:#ffffff;--panel2:#f1f4f7;--line:#d3dae1;--text:#1b2631;--muted:#62727f;--gold:#c77d00;--ok:#2e9e6a;--danger:#d2453b;color-scheme:light}
+html[data-theme="light"] .btn.primary{color:#fff}
+html[data-theme="light"] .top{background:#fff;border-bottom:1px solid #d3dae1}
+/* Profiles and live games */
+[data-pid]{cursor:pointer}
+[data-pid]:hover{text-decoration:underline}
+.prof-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.prof-name{font:800 24px var(--f-head);color:var(--text)}
+.prof-sub{font-size:13px;color:var(--muted)}
+.prof-h{margin:14px 0 6px;font:700 12px var(--f-head);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.prof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.prof-stat{background:var(--panel2);border-radius:8px;padding:8px 10px;text-align:center}
+.prof-stat b{display:block;font:800 20px var(--f-head);color:var(--gold)}
+.prof-stat span{font-size:12px;color:var(--muted)}
+.prof-live{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--panel2);border-radius:10px;padding:12px;margin:4px 0 6px}
+.prof-live .pl-info{flex:1;min-width:150px;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--text)}
+.miniboard{display:grid;grid-template-columns:repeat(8,1fr);width:168px;flex:none;border-radius:4px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.mq{aspect-ratio:1;background:var(--lt)}
+.mq.d{background:var(--dk)}
+.mq i{display:block;width:100%;height:100%;background-size:100%;background-repeat:no-repeat;background-position:center}
+.prof-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 
 /* Move review */
 .move-review{display:inline-flex;align-items:center;gap:4px;margin-left:7px;font-size:11px;font-weight:700;white-space:nowrap;vertical-align:middle}
@@ -328,7 +377,7 @@ html[data-bg]:not([data-bg="default"]) .top{background:rgba(12,14,18,.62);backdr
 .p4bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;width:var(--b4)}
 .p4chip{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-weight:600;font-size:14px;max-width:100%}
 .p4chip .dotc,#moves4 .dotc{width:10px;height:10px;border-radius:50%;background:var(--pc);flex:none}
-.p4chip.turn{border-color:var(--gold);box-shadow:0 0 0 3px rgba(158,208,90,.25)}
+.p4chip.turn{border-color:var(--gold);box-shadow:0 0 0 3px rgba(242,184,60,.25)}
 .p4chip.out{opacity:.5}
 .p4chip .p4n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
 .p4chip .p4c{color:var(--muted);font-weight:500;font-size:12px}
@@ -362,7 +411,7 @@ html[data-bg]:not([data-bg="default"]) .top{background:rgba(12,14,18,.62);backdr
 .pal{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .pal button{display:flex;align-items:center;justify-content:center;min-height:42px;padding:2px;border:1px solid var(--line);border-radius:9px;background:var(--sea);cursor:pointer}
 .pal button:hover{border-color:var(--gold)}
-.pal button.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(158,208,90,.45)}
+.pal button.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(242,184,60,.45)}
 .pal .pc{font-size:28px;position:static}
 .pal .erase{grid-column:span 6;font:600 13px var(--f-body);color:var(--text);min-height:36px;background:var(--panel)}
 .fenbox{display:flex;flex-direction:column;gap:8px}
@@ -604,6 +653,15 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--gold);he
             </button>
             <div class="acc-b" id="accb-four" hidden>
               <div class="block" id="p4-block"></div>
+            </div>
+          </div>
+
+          <div class="acc" id="acc-watch">
+            <button class="acc-h" type="button" aria-expanded="false" aria-controls="accb-watch">
+              <span class="acc-t"><b>Watch live</b><small>See the games people are playing right now</small></span><span class="chev" aria-hidden="true"></span>
+            </button>
+            <div class="acc-b" id="accb-watch" hidden>
+              <ul class="glist" id="live-games"><li class="muted">Loading…</li></ul>
             </div>
           </div>
 
@@ -1438,6 +1496,7 @@ async function loadLobbyData() {
   const col = S.lbCol || 'rating';
   const top = await sb.from('profiles').select('id,username,rating,rating_bullet,rating_blitz,rating4_bullet,rating4_blitz,rating4_std,wins,losses,draws').eq('is_guest', false).order(col, {ascending: false}).order('wins', {ascending: false}).limit(10);
   if (!$('view-lobby').classList.contains('hidden')) renderLeaders(top.data || [], col);
+  loadLiveGames();
   if (!S.user || isGuest() || !$('open-games')) return;
   const uid = S.user.id, mineFilter = `white_id.eq.${uid},black_id.eq.${uid}`;
   const [open, mine, chal, fr, open4, mine4] = await Promise.all([
@@ -1465,7 +1524,7 @@ function renderLeaders(rows, col) {
   col = col || 'rating';
   const ol = $('leaders');
   if (!rows.length) { ol.innerHTML = '<li class="muted" style="display:block">No players yet. Create an account and be the first.</li>'; return; }
-  ol.innerHTML = rows.map((p, i) => `<li class="${S.user && p.id === S.user.id ? 'me-row' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(p.username)}${titleBadge(p[col])}</span><span class="rt">${p[col]}</span><span class="wl">${col.indexOf('rating4') < 0 ? p.wins + '-' + p.losses + '-' + p.draws : ''}</span></li>`).join('');
+  ol.innerHTML = rows.map((p, i) => `<li class="${S.user && p.id === S.user.id ? 'me-row' : ''}"><span class="rk">${i + 1}</span><span class="nm" data-pid="${p.id}">${esc(p.username)}${titleBadge(p[col])}</span><span class="rt">${p[col]}</span><span class="wl">${col.indexOf('rating4') < 0 ? p.wins + '-' + p.losses + '-' + p.draws : ''}</span></li>`).join('');
 }
 
 function nameOf(id) { const p = PC[id]; return p ? p.username : 'Player'; }
@@ -1507,7 +1566,7 @@ function renderFriends(rows) {
     outgoing.map(r => `<li><span class="who"><b>${esc(nameOf(r.addressee_id))}</b><span class="sub">request sent</span></span><button class="btn sm ghost" data-act="f-remove" data-id="${r.id}" type="button">Cancel</button></li>`).join('');
   $('friend-list').innerHTML = friends.length ? friends.map(r => {
     const id = other(r), p = PC[id];
-    return `<li><span class="who"><b>${esc(nameOf(id))}</b>${p && !p.is_guest ? titleBadge(bestRating(p)) + ' (' + p.rating + ')' : ''}</span><button class="btn sm" data-act="f-challenge" data-uid="${id}" type="button">Challenge</button><button class="btn sm ghost" data-act="f-remove" data-id="${r.id}" type="button" aria-label="Remove ${esc(nameOf(id))} from friends">Remove</button></li>`;
+    return `<li><span class="who"><b data-pid="${id}">${esc(nameOf(id))}</b>${p && !p.is_guest ? titleBadge(bestRating(p)) + ' (' + p.rating + ')' : ''}</span><button class="btn sm" data-act="f-challenge" data-uid="${id}" type="button">Challenge</button><button class="btn sm ghost" data-act="f-remove" data-id="${r.id}" type="button" aria-label="Remove ${esc(nameOf(id))} from friends">Remove</button></li>`;
   }).join('') : '<li class="muted">No friends yet. Add someone by username.</li>';
 }
 
@@ -1680,6 +1739,10 @@ async function pollOnline() {
   if (!S.online || S.online.busy) return;
   const {data} = await sb.from('games').select('*').eq('id', S.online.row.id).maybeSingle();
   if (data) applyRow(data);
+  else if (S.online && S.online.watch && !S.over) {              // the finished game was removed from the server
+    S.over = {result: S.online.row.result || '*', reason: S.online.row.reason || 'ended'};
+    clearInterval(S.online.poll); render();
+  }
 }
 
 async function applyRow(row) {
@@ -1703,7 +1766,7 @@ async function applyRow(row) {
   if (opponentMoveArrived && row.status === 'active' && row.turn === S.color && S.premove) {
     setTimeout(executePremove, 0);
   }
-  if (row.status === 'active' && row.draw_offer && row.draw_offer !== S.color && cur.draw_offer !== row.draw_offer) {
+  if (!S.online.watch && row.status === 'active' && row.draw_offer && row.draw_offer !== S.color && cur.draw_offer !== row.draw_offer) {
     modal('Draw offer', `<p>${esc(nameOf(S.color === 'w' ? row.black_id : row.white_id))} offers a draw.</p>`, [
       {label: 'Accept', cls: 'primary', onClick: acceptDraw},
       {label: 'Decline', onClick: () => { pushPatch({draw_offer: null}, {status: 'active'}).then(render); }}
@@ -3339,14 +3402,14 @@ function tick() {
     el.classList.toggle('run', isRunning(c));
   });
   // your own clock ticking down in the last 10 seconds
-  if ((S.mode === 'ai' || S.mode === 'online') && !S.over && isRunning(S.color) && clockMs(S.color) < 10000) {
+  if ((S.mode === 'ai' || S.mode === 'online') && !(S.online && S.online.watch) && !S.over && isRunning(S.color) && clockMs(S.color) < 10000) {
     const sec = Math.ceil(clockMs(S.color) / 1000);
     if (sec !== S.lowSec) { S.lowSec = sec; sfx('tick'); }
   } else S.lowSec = 0;
   if (S.over) return;
   const runner = ['w', 'b'].find(isRunning);
   if (!runner || clockMs(runner) > 0) return;
-  if (S.mode === 'online') { claimTimeout(); return; }
+  if (S.mode === 'online') { if (!S.online.watch) claimTimeout(); return; }
   S.clock[runner] = 0; S.clock.running = null;
   S.over = {result: runner === 'w' ? '0-1' : '1-0', reason: 'timeout'};
   S.aiThinking = false; clearSel(); render();
@@ -3372,7 +3435,7 @@ function syncLast() {
 function canInteract() {
   if (!S.game || S.over || S.review) return false;
   if (S.mode === 'ai') return !S.aiThinking && S.game.turn() === S.color;
-  if (S.mode === 'online') return !!S.online && !S.online.busy && S.online.row.status === 'active' && S.game.turn() === S.color;
+  if (S.mode === 'online') return !!S.online && !S.online.watch && !S.online.busy && S.online.row.status === 'active' && S.game.turn() === S.color;
   return S.mode === 'local';
 }
 
@@ -3381,7 +3444,7 @@ function ownsPiece(p) { return p.color === S.game.turn() && (S.mode === 'local' 
 // A premove can be made while it is the opponent's turn, against a person online or against a bot.
 function premoveWaiting() {
   if (!S.game || S.over || S.review) return false;
-  if (S.mode === 'online') return !!S.online && S.online.row.status === 'active' && S.game.turn() !== S.color;
+  if (S.mode === 'online') return !!S.online && !S.online.watch && S.online.row.status === 'active' && S.game.turn() !== S.color;
   if (S.mode === 'ai') return S.game.turn() !== S.color;
   return false;
 }
@@ -4503,7 +4566,7 @@ function starsUri() {
 }
 // Page backgrounds for the game screens. Each is one CSS "background" value.
 const BACKGROUNDS = [
-  ['default', 'Classic'], ['midnight', 'Midnight'], ['aurora', 'Aurora'], ['sunset', 'Sunset'], ['ocean', 'Ocean'], ['forest', 'Forest'],
+  ['default', 'Default'], ['midnight', 'Midnight'], ['aurora', 'Aurora'], ['sunset', 'Sunset'], ['ocean', 'Ocean'], ['forest', 'Forest'],
   ['ember', 'Ember'], ['violet', 'Violet'], ['steel', 'Steel'], ['space', 'Starfield'], ['wood', 'Dark wood'], ['slate', 'Slate'],
   ['leather', 'Leather'], ['felt', 'Green felt'], ['marble', 'Black marble'], ['metal', 'Brushed metal'], ['carbon', 'Carbon fibre'],
   ['grid', 'Blueprint'], ['dots', 'Dots']
@@ -4529,11 +4592,15 @@ function bgCss(id) {
     case 'carbon': return 'repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 2px,transparent 2px 4px),repeating-linear-gradient(-45deg,rgba(0,0,0,.35) 0 2px,transparent 2px 4px),#14181d';
     case 'grid': return 'linear-gradient(rgba(120,170,255,.13) 1px,transparent 1px) 0 0/32px 32px,linear-gradient(90deg,rgba(120,170,255,.13) 1px,transparent 1px) 0 0/32px 32px,linear-gradient(160deg,#0b2447,#10315e)';
     case 'dots': return 'radial-gradient(rgba(255,255,255,.1) 1.5px,transparent 1.7px) 0 0/22px 22px,#121a26';
-    default: return '#161512';
+    default: return '';
   }
 }
 
-const UIPREF = {board: 'teal', pieces: 'classic', bg: 'default', coords: true, hints: true, last: true};
+const THEMES = [["classic", "Classic", "#12202b", "#f2b83c"], ["dark", "Dark", "#161512", "#629924"], ["amoled", "Black", "#000000", "#f2b83c"], ["ocean", "Ocean", "#071a24", "#3ecfd8"], ["forest", "Forest", "#0c1a12", "#8bd45a"], ["ember", "Ember", "#1d100f", "#ff9d52"], ["purple", "Purple", "#130f22", "#b28cff"], ["rose", "Rose", "#1f1017", "#ff7aa8"], ["nord", "Nord", "#2e3440", "#88c0d0"], ["mocha", "Mocha", "#1b1512", "#d9a066"], ["light", "Light", "#eef1f4", "#c77d00"]];
+const UIPREF = {theme: 'classic', board: 'auto', pieces: 'auto', bg: 'default', coords: true, hints: true, last: true};
+// "auto" follows the theme: Classic = teal board with text pieces, Dark = brown board with Standard pieces
+const effBoard = () => UIPREF.board === 'auto' ? (UIPREF.theme === 'dark' ? 'brown' : 'teal') : UIPREF.board;
+const effPieces = () => UIPREF.pieces === 'auto' ? (UIPREF.theme === 'dark' ? 'cburnett' : 'classic') : UIPREF.pieces;
 const PC_KEYS = ['wk', 'wq', 'wr', 'wb', 'wn', 'wp', 'bk', 'bq', 'br', 'bb', 'bn', 'bp'];
 const pieceUri = (set, key) => PIECE_SETS[set] ? 'data:image/svg+xml;utf8,' + encodeURIComponent(PIECE_SETS[set].svg[key]) : '';
 function findBoard(id) {
@@ -4544,19 +4611,19 @@ function findBoard(id) {
 }
 const texOf = (t, size) => texUri(t.k, t.base, t.ink, t.seed, size || 512);
 function applyUiPrefs() {
-  const th = findBoard(UIPREF.board), bg = bgCss(UIPREF.bg);
+  const th = findBoard(effBoard()), bg = bgCss(UIPREF.bg), ep = effPieces();
+  document.documentElement.dataset.theme = UIPREF.theme;
   ['view-game', 'view-kfc'].forEach(id => {
     const v = $(id); if (!v) return;
-    v.dataset.board = UIPREF.board; v.dataset.pieces = UIPREF.pieces; v.dataset.tex = th.tex ? '1' : '0';
+    v.dataset.board = effBoard(); v.dataset.pieces = ep; v.dataset.tex = th.tex ? '1' : '0';
     v.dataset.coords = UIPREF.coords ? 'on' : 'off'; v.dataset.hints = UIPREF.hints ? 'on' : 'off'; v.dataset.last = UIPREF.last ? 'on' : 'off';
     v.style.setProperty('--lt', th.lt); v.style.setProperty('--dk', th.dk);
     if (th.tex) { v.style.setProperty('--tex', `url("${texOf(th.tex)}")`); v.style.setProperty('--dko', th.tex.dko); }
     else { v.style.removeProperty('--tex'); v.style.removeProperty('--dko'); }
+    if (bg) v.style.setProperty('--pagebg', bg); else v.style.removeProperty('--pagebg');
   });
-  document.documentElement.dataset.bg = UIPREF.bg;
-  document.documentElement.style.setProperty('--pagebg', bg || '#161512');
   // Pictures for every piece. Kung Fu Chess always uses pictures, so "Classic" (text pieces) falls back to Standard there.
-  const set = PIECE_SETS[UIPREF.pieces] ? UIPREF.pieces : 'cburnett';
+  const set = PIECE_SETS[ep] ? ep : 'cburnett';
   let st = document.getElementById('pieceset-style');
   if (!st) { st = document.createElement('style'); st.id = 'pieceset-style'; document.head.appendChild(st); }
   st.textContent = PC_KEYS.map(k => `[data-pc="${k}"]{background-image:url("${pieceUri(set, k)}")}`).join('\n');
@@ -4568,8 +4635,9 @@ function saveUiPrefs() {
 function bindUiPrefs() {
   try {
     const j = JSON.parse(localStorage.getItem('pal_ui') || '{}');
-    if (BOARD_THEMES.some(t => t[0] === j.board) || TEX_BOARDS.some(t => t.id === j.board)) UIPREF.board = j.board;
-    if (j.pieces === 'classic' || PIECE_SETS[j.pieces]) UIPREF.pieces = j.pieces;
+    if (THEMES.some(t => t[0] === j.theme)) UIPREF.theme = j.theme;
+    if (j.board === 'auto' || BOARD_THEMES.some(t => t[0] === j.board) || TEX_BOARDS.some(t => t.id === j.board)) UIPREF.board = j.board;
+    if (j.pieces === 'auto' || j.pieces === 'classic' || PIECE_SETS[j.pieces]) UIPREF.pieces = j.pieces;
     if (BACKGROUNDS.some(b => b[0] === j.bg)) UIPREF.bg = j.bg;
     ['coords', 'hints', 'last'].forEach(k => { if (typeof j[k] === 'boolean') UIPREF[k] = j[k]; });
   } catch (e) { /* defaults are fine */ }
@@ -4579,6 +4647,8 @@ function bindUiPrefs() {
 function openSettings() {
   const credits = [['Classic', 'text pieces', 'this site']].concat(Object.keys(PIECE_SETS).map(k => [PIECE_SETS[k].name, PIECE_SETS[k].by, PIECE_SETS[k].lic]));
   const body = `<div class="set-prevwrap"><div class="set-preview" id="set-preview" aria-hidden="true"></div></div>
+    <h4 class="set-h">Theme</h4><div class="set-grid" id="set-themes">${THEMES.map(t => `<button type="button" class="set-tile" data-theme="${t[0]}"><span class="thm" style="background:linear-gradient(135deg,${t[2]} 56%,${t[3]} 56%)"></span><span>${esc(t[1])}</span></button>`).join('')}</div>
+    <p class="muted small" style="margin:8px 0 0">Classic is the original look. Dark is the Lichess and chess.com style, with the brown board and Standard pieces unless you pick your own below.</p>
     <h4 class="set-h">Board colours</h4><div class="set-grid" id="set-boards"></div>
     <h4 class="set-h">Textured boards</h4><div class="set-grid" id="set-tboards"></div>
     <h4 class="set-h">Pieces</h4><div class="set-grid" id="set-pieces"></div>
@@ -4597,26 +4667,134 @@ function openSettings() {
   const setTile = k => `<button type="button" class="set-tile" data-set="${k}"><span class="pts"><i style="background-image:url('${pieceUri(k, 'wn')}')"></i><i style="background-image:url('${pieceUri(k, 'bn')}')"></i></span><span>${esc(PIECE_SETS[k].name)}</span></button>`;
   pieces.innerHTML = `<button type="button" class="set-tile" data-set="classic"><span class="pts"><span class="pgl w">${GLYPH.n}</span><span class="pgl b">${GLYPH.n}</span></span><span>Classic</span></button>` + Object.keys(PIECE_SETS).map(setTile).join('');
   bgs.innerHTML = BACKGROUNDS.map(b => `<button type="button" class="set-tile" data-bg="${b[0]}"><span class="bgt" style="${bgCss(b[0]) ? 'background:' + bgCss(b[0]).replace(/"/g, "'") : ''}"></span><span>${esc(b[1])}</span></button>`).join('');
+  const themes = q('set-themes');
   const paint = () => {
-    const th = findBoard(UIPREF.board);
+    const th = findBoard(effBoard());
     prev.style.setProperty('--lt', th.lt); prev.style.setProperty('--dk', th.dk);
     prev.dataset.tex = th.tex ? '1' : '0';
     if (th.tex) { prev.style.setProperty('--tex', `url("${texOf(th.tex)}")`); prev.style.setProperty('--dko', th.tex.dko); }
     const rows = [['bk', 'bq', 'br', 'bb', 'bn', 'bp'], ['wp', 'wn', 'wb', 'wr', 'wq', 'wk']];
-    const set = PIECE_SETS[UIPREF.pieces] ? UIPREF.pieces : null;
+    const set = PIECE_SETS[effPieces()] ? effPieces() : null;
     prev.innerHTML = rows.map((r, ri) => r.map((k, ci) => {
       const inner = set ? `<i class="pvi" style="background-image:url('${pieceUri(set, k)}')"></i>` : `<span class="pvg ${k[0]}">${GLYPH[k[1]]}</span>`;
       return `<div class="pvq${(ri + ci) % 2 ? ' d' : ''}">${inner}</div>`;
     }).join('')).join('');
-    root.querySelectorAll('[data-board]').forEach(b => b.classList.toggle('on', b.dataset.board === UIPREF.board));
-    pieces.querySelectorAll('.set-tile').forEach(b => b.classList.toggle('on', b.dataset.set === UIPREF.pieces));
+    root.querySelectorAll('[data-board]').forEach(b => b.classList.toggle('on', b.dataset.board === effBoard()));
+    pieces.querySelectorAll('.set-tile').forEach(b => b.classList.toggle('on', b.dataset.set === effPieces()));
+    themes.querySelectorAll('.set-tile').forEach(b => b.classList.toggle('on', b.dataset.theme === UIPREF.theme));
     bgs.querySelectorAll('.set-tile').forEach(b => b.classList.toggle('on', b.dataset.bg === UIPREF.bg));
     q('set-coords').checked = UIPREF.coords; q('set-hints').checked = UIPREF.hints; q('set-last').checked = UIPREF.last;
   };
   const pick = (grid, attr, key) => grid.addEventListener('click', e => { const b = e.target.closest('[' + attr + ']'); if (b) { UIPREF[key] = b.getAttribute(attr); saveUiPrefs(); paint(); } });
-  pick(boards, 'data-board', 'board'); pick(tboards, 'data-board', 'board'); pick(pieces, 'data-set', 'pieces'); pick(bgs, 'data-bg', 'bg');
+  pick(themes, 'data-theme', 'theme'); pick(boards, 'data-board', 'board'); pick(tboards, 'data-board', 'board'); pick(pieces, 'data-set', 'pieces'); pick(bgs, 'data-bg', 'bg');
   [['coords', 'set-coords'], ['hints', 'set-hints'], ['last', 'set-last']].forEach(([k, id]) => q(id).addEventListener('change', e => { UIPREF[k] = e.target.checked; saveUiPrefs(); }));
   paint();
+}
+
+/* ═════════════ Profiles and watching live games ═════════════
+   Watching reads the same "games" row the two players use, so the Supabase policy must let signed-in users read
+   games that are in progress. See spectate.sql. */
+const RATINGS2 = [['Standard', 'rating'], ['Bullet', 'rating_bullet'], ['Blitz', 'rating_blitz']];
+const RATINGS4 = [['Standard', 'rating4_std'], ['Bullet', 'rating4_bullet'], ['Blitz', 'rating4_blitz']];
+
+function miniBoardHtml(moves) {
+  const b = rebuild(moves).board(), th = findBoard(effBoard());
+  let h = `<div class="miniboard" style="--lt:${th.lt};--dk:${th.dk}">`;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const q = b[r][c];
+    h += `<div class="mq${(r + c) % 2 ? ' d' : ''}">${q ? `<i data-pc="${q.color}${q.type}"></i>` : ''}</div>`;
+  }
+  return h + '</div>';
+}
+
+async function liveGameOf(pid) {
+  const {data} = await sb.from('games').select('*').eq('status', 'active').or(`white_id.eq.${pid},black_id.eq.${pid}`).order('updated_at', {ascending: false}).limit(1);
+  return data && data[0] && data[0].white_id && data[0].black_id ? data[0] : null;
+}
+
+async function loadLiveGames() {
+  const ul = $('live-games');
+  if (!ul || !sb) return;
+  const {data, error} = await sb.from('games').select('*').eq('status', 'active').order('updated_at', {ascending: false}).limit(12);
+  if (!$('live-games')) return;
+  if (error) { ul.innerHTML = '<li class="muted">Could not load live games.</li>'; return; }
+  const rows = (data || []).filter(g => g.white_id && g.black_id);
+  S.liveRows = {}; rows.forEach(g => { S.liveRows[g.id] = g; });
+  await fetchProfiles(rows.flatMap(g => [g.white_id, g.black_id]));
+  if (!$('live-games')) return;
+  const mine = g => S.user && (g.white_id === S.user.id || g.black_id === S.user.id);
+  ul.innerHTML = rows.length ? rows.map(g => `<li><span class="who"><b data-pid="${g.white_id}">${esc(nameOf(g.white_id))}</b> vs <b data-pid="${g.black_id}">${esc(nameOf(g.black_id))}</b><span class="sub">${esc(tcLabel(g.time_control))}, ${Math.ceil(g.moves.length / 2)} moves</span></span><button class="btn sm" data-live="${g.id}" type="button">${mine(g) ? 'Open' : 'Watch'}</button></li>`).join('')
+    : `<li class="muted">No live games right now.${isPalAdmin() ? ' (Admin note: if games are running but do not show here, run spectate.sql once in the Supabase SQL editor.)' : ''}</li>`;
+}
+
+async function openWatch(row) {
+  teardownOnline(); clearSel();
+  S.mode = 'online'; S.color = 'w'; S.flip = false;
+  S.online = {row, busy: false, settled: true, channel: null, poll: null, watch: true};   // settled: a watcher never records a result
+  await Promise.all([fetchProfiles([row.white_id, row.black_id]), syncServerClock()]);
+  S.game = rebuild(row.moves); syncLast();
+  S.over = row.status === 'finished' ? {result: row.result, reason: row.reason} : null;
+  S.endPlayed = S.over; S.premove = null;
+  showView('game'); render();
+  const id = row.id;
+  S.online.channel = sb.channel('watch-' + id)
+    .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games', filter: 'id=eq.' + id}, pl => applyRow(pl.new))
+    .subscribe();
+  S.online.poll = setInterval(pollOnline, 2500);
+}
+
+async function openProfile(id) {
+  if (!id || !sb) return;
+  const root = modal('Profile', '<p class="muted">Loading…</p>', [{label: 'Close'}], true);
+  await fetchProfiles([id], true);
+  const p = PC[id], body = root.querySelector('.mbody');
+  if (!p) { body.innerHTML = '<p class="muted">That player could not be found.</p>'; return; }
+  let live = null;
+  try { live = await liveGameOf(id); } catch (e) { live = null; }
+  if (live) await fetchProfiles([live.white_id, live.black_id]);
+  const isMe = !!S.user && id === S.user.id, social = !!S.user && !isGuest() && !isMe && !p.is_guest;
+  const total = (p.wins || 0) + (p.losses || 0) + (p.draws || 0), winPct = total ? Math.round(100 * (p.wins || 0) / total) : 0;
+  const stat = (label, v) => `<div class="prof-stat"><b>${esc(String(v == null ? '-' : v))}</b><span>${esc(label)}</span></div>`;
+  let h = `<div class="prof-head"><span class="prof-name">${esc(p.username)}</span>${p.is_guest ? '' : titleBadge(bestRating(p), true)}${isMe ? '<span class="prof-sub">This is you</span>' : ''}</div>`;
+  if (p.is_guest) h += '<p class="muted">Guest player. Guests are unrated.</p>';
+  else {
+    h += `<div class="prof-h">Ratings</div><div class="prof-grid">${RATINGS2.map(r => stat(r[0], p[r[1]])).join('')}</div>`;
+    if (RATINGS4.some(r => p[r[1]] != null)) h += `<div class="prof-h">Four player</div><div class="prof-grid">${RATINGS4.map(r => stat(r[0], p[r[1]])).join('')}</div>`;
+    h += `<div class="prof-h">Record</div><div class="prof-grid">${stat('Wins', p.wins)}${stat('Losses', p.losses)}${stat('Draws', p.draws)}</div>`;
+    h += `<div class="prof-sub" style="margin-top:8px">${total ? `${total} games, ${winPct}% won` : 'No games yet'}${p.streak_current > 0 ? `, ${p.streak_current}-day streak${p.streak_best ? ` (best ${p.streak_best})` : ''}` : ''}</div>`;
+  }
+  h += '<div class="prof-h">Right now</div>';
+  if (live) {
+    const mineLive = !!S.user && (live.white_id === S.user.id || live.black_id === S.user.id);
+    h += `<div class="prof-live">${miniBoardHtml(live.moves)}<div class="pl-info"><div><b data-pid="${live.white_id}">${esc(nameOf(live.white_id))}</b> (White)<br>vs <b data-pid="${live.black_id}">${esc(nameOf(live.black_id))}</b> (Black)</div><div class="prof-sub">${esc(tcLabel(live.time_control))}, move ${Math.ceil(live.moves.length / 2) || 1}</div><button class="btn primary sm" id="prof-watch" type="button">${mineLive ? 'Open game' : 'Watch game'}</button></div></div>`;
+  } else h += `<p class="muted">${isMe ? 'You are' : esc(p.username) + ' is'} not in a live game.</p>`;
+  if (social) h += '<div class="prof-act"><button class="btn sm" id="prof-chal" type="button">Challenge</button><button class="btn sm ghost" id="prof-friend" type="button">Add friend</button></div>';
+  body.innerHTML = h;
+  const w = body.querySelector('#prof-watch');
+  if (w) w.onclick = () => { closeModal(); if (S.user && (live.white_id === S.user.id || live.black_id === S.user.id)) resume(live.id); else openWatch(live); };
+  const c = body.querySelector('#prof-chal');
+  if (c) c.onclick = () => { closeModal(); createGame($('seg-ocolor').dataset.val, +$('seg-otc').dataset.val, id); };
+  const f = body.querySelector('#prof-friend');
+  if (f) f.onclick = () => { $('friend-in').value = p.username; addFriend(); f.disabled = true; };
+}
+
+function bindProfiles() {
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-pid]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    openProfile(el.dataset.pid);
+  }, true);
+  const ul = $('live-games');
+  if (ul) ul.addEventListener('click', e => {
+    const b = e.target.closest('button[data-live]');
+    if (!b) return;
+    const row = (S.liveRows || {})[b.dataset.live];
+    if (!row) return;
+    if (S.user && (row.white_id === S.user.id || row.black_id === S.user.id)) resume(row.id); else openWatch(row);
+  });
+  const hd = document.querySelector('#acc-watch .acc-h');
+  if (hd) hd.addEventListener('click', loadLiveGames);
 }
 
 function playerInfo(color) {
@@ -4629,7 +4807,7 @@ function playerInfo(color) {
   const row = S.online.row, id = color === 'w' ? row.white_id : row.black_id;
   if (!id) return {name: 'Waiting for opponent…'};
   const p = PC[id];
-  return {name: p ? p.username : 'Player', sub: p ? String(ratingOf(p, row.time_control)) : '', rating: p && !p.is_guest ? ratingOf(p, row.time_control) : null};
+  return {id, name: p ? p.username : 'Player', sub: p ? String(ratingOf(p, row.time_control)) : '', rating: p && !p.is_guest ? ratingOf(p, row.time_control) : null};
 }
 
 function captured(g) {
@@ -4649,14 +4827,14 @@ function fillBar(el, color, g) {
     const ms = clockMs(color);
     clk = `<span class="clk${isRunning(color) ? ' run' : ''}${ms < 10000 ? ' low' : ''}" data-c="${color}">${fmtClock(ms)}</span>`;
   }
-  el.innerHTML = `<span class="dot"></span><span class="pname">${esc(info.name)}${info.sub ? `<em>${esc(info.sub)}</em>` : ''}${info.rating != null ? titleBadge(info.rating) : ''}</span><span class="caps">${cap.out[color].map(t => `<span class="cp ${opp}" data-pc="${opp}${t}">${GLYPH[t]}</span>`).join('')}</span><span class="adv">${cap.diff[color] > 0 ? '+' + cap.diff[color] : ''}</span>${clk}`;
+  el.innerHTML = `<span class="dot"></span><span class="pname"${info.id ? ` data-pid="${info.id}"` : ''}>${esc(info.name)}${info.sub ? `<em>${esc(info.sub)}</em>` : ''}${info.rating != null ? titleBadge(info.rating) : ''}</span><span class="caps">${cap.out[color].map(t => `<span class="cp ${opp}" data-pc="${opp}${t}">${GLYPH[t]}</span>`).join('')}</span><span class="adv">${cap.diff[color] > 0 ? '+' + cap.diff[color] : ''}</span>${clk}`;
 }
 
 function statusText() {
   const g = S.game;
   if (S.over) {
     const {result, reason} = S.over;
-    if (result === '*') return `Saved game. ${g.turn() === 'w' ? 'White' : 'Black'} to move.`;
+    if (result === '*') return S.online && S.online.watch ? 'The game has ended.' : `Saved game. ${g.turn() === 'w' ? 'White' : 'Black'} to move.`;
     if (result === '1/2-1/2') return `Draw by ${reason}.`;
     const wWon = result === '1-0';
     const winner = wWon ? 'White' : 'Black', loser = wWon ? 'Black' : 'White';
@@ -4664,12 +4842,12 @@ function statusText() {
     if (reason === 'resignation') line = `${loser} resigned.`;
     else if (reason === 'timeout') line = `${loser} ran out of time.`;
     else line = reason.charAt(0).toUpperCase() + reason.slice(1) + '.';
-    if (S.mode === 'local') return `${line} ${winner} wins.`;
+    if (S.mode === 'local' || (S.online && S.online.watch)) return `${line} ${winner} wins.`;
     return `${line} ${(wWon === (S.color === 'w')) ? 'You win.' : 'You lose.'}`;
   }
   if (S.mode === 'online' && S.online.row.status === 'waiting') return S.online.row.invited_id ? `Waiting for ${nameOf(S.online.row.invited_id)} to accept.` : 'Waiting for an opponent to join.';
   const chk = g.in_check() ? ' Check.' : '';
-  if (S.mode === 'local') return `${g.turn() === 'w' ? 'White' : 'Black'} to move.${chk}`;
+  if (S.mode === 'local' || (S.online && S.online.watch)) return `${g.turn() === 'w' ? 'White' : 'Black'} to move.${chk}`;
   if (S.mode === 'ai' && S.aiThinking) return 'Opponent is thinking…';
   return (g.turn() === S.color ? 'Your move.' : 'Opponent’s move.') + chk;
 }
@@ -4701,7 +4879,7 @@ function renderSide(vg) {
   const note = $('note');
   const botGame = S.mode === 'ai' && S.botElo > 0, onlineDone = S.mode === 'online' && S.over;
   note.classList.toggle('hidden', !onlineDone);
-  note.textContent = onlineDone ? 'Online games are deleted from the server once they finish. Use Overview to review this one before you leave.' : '';
+  note.textContent = onlineDone ? (S.online.watch ? 'This game has finished. Use Overview to look back at it.' : 'Online games are deleted from the server once they finish. Use Overview to review this one before you leave.') : '';
 
   const dp = ply => S.review ? ` data-ply="${ply}"${S.review.ply === ply ? ' class="cur"' : ''}` : '';
   let mv = '';
@@ -4746,12 +4924,12 @@ function renderSide(vg) {
     if (S.tc > 0) u.title = 'Undo is off in timed games';
     add('New game', newGame);
   }
-  if (S.mode === 'online' && S.online.row.status === 'active' && !S.over) {
+  if (S.mode === 'online' && S.online.row.status === 'active' && !S.over && !S.online.watch) {
     if (S.online.row.draw_offer === S.color) add('Draw offered', () => {}).disabled = true;
     else add('Offer draw', offerDraw);
     add('Resign', confirmResign, 'danger');
   }
-  add('Back to lobby', leaveGame, 'ghost');
+  add(S.online && S.online.watch ? 'Stop watching' : 'Back to lobby', leaveGame, 'ghost');
 }
 
 /* ═════════════ Move Review Analysis ═════════════ */
@@ -5098,7 +5276,7 @@ function bindStatic() {
     const keys = {ArrowLeft: S.review.ply - 1, ArrowRight: S.review.ply + 1, Home: 0, End: total};
     if (e.key in keys) { e.preventDefault(); stopAuto(); setPly(keys[e.key]); }
   });
-  bindBoard(); bindKfc(); bindUiPrefs();
+  bindBoard(); bindKfc(); bindUiPrefs(); bindProfiles();
   window.addEventListener('resize', () => { drawPremoveArrow(); uaDraw('main'); uaDraw('kfc'); });
   miniBoard($('mini'), 'r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 4');
 }
