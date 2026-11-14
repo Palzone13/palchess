@@ -678,6 +678,14 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 #pz-root{width:fit-content;max-width:100%}
 @media (max-width:1100px){.lobby-grid.pz-on{grid-template-columns:190px minmax(0,1fr)}.lobby-grid.pz-on::after{display:none}}
 @media (max-width:760px){.lobby-grid.pz-on{grid-template-columns:1fr}}
+
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.ach{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;opacity:.65;filter:grayscale(.75)}
+.ach.on{opacity:1;filter:none;border-color:var(--gold)}
+.ach-i{font-size:30px;margin-bottom:4px}
+.ach .muted{font-size:12px;margin:2px 0 8px}
+.ach-d{color:var(--gold);font-size:12px}
+.ach-p{font-size:12px}
 </style>
 </head>
 <body>
@@ -1542,11 +1550,16 @@ function adminInfoHtml() {
 }
 
 /* ═════════════ Puzzles: mate in 1 and mate in 2 (every position verified; any move that forces mate is accepted) ═════════════ */
-const PUZZLES = [{"fen":"6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1","n":1,"t":"Back-rank mate"},{"fen":"6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1","n":1,"t":"Smothered mate"},{"fen":"r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1","n":1,"t":"Scholar's mate"},{"fen":"k7/2Q5/5P1K/3R4/8/8/8/8 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"7k/8/8/6Q1/R7/8/K1P5/8 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"k1K5/8/8/8/p1Pp4/2Q5/7p/8 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"6Q1/8/8/1p6/8/3K1k2/2p5/4R3 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"k7/6R1/5P2/8/8/8/5K2/7R w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"r5k1/5ppp/8/8/8/8/3R1PPP/3R2K1 w - - 0 1","n":2,"t":"Doubled rooks"},{"fen":"6k1/8/8/8/8/8/R7/1R4K1 w - - 0 1","n":2,"t":"Rook ladder"},{"fen":"8/7k/2RR4/8/1p4p1/8/4K3/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"8/5R2/1pp2K2/8/4R3/8/8/7k w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"1R6/1p6/2R5/5K2/8/8/1k6/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"2R5/8/8/3p4/3R4/8/6p1/2K1k3 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"5K2/8/3p2p1/p7/Q7/1R6/7k/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"8/5p2/8/k2p3K/p2Q4/8/8/5R2 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"3R4/1R6/k7/8/8/2K5/8/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"3Q4/8/k7/p4K2/P7/5R2/8/8 w - - 0 1","n":2,"t":"Mate in 2"}];
+const PUZZLES = [{"fen":"6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1","n":1,"t":"Back-rank mate"},{"fen":"6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1","n":1,"t":"Smothered mate"},{"fen":"r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1","n":1,"t":"Scholar's mate"},{"fen":"k7/2Q5/5P1K/3R4/8/8/8/8 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"7k/8/8/6Q1/R7/8/K1P5/8 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"k1K5/8/8/8/p1Pp4/2Q5/7p/8 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"6Q1/8/8/1p6/8/3K1k2/2p5/4R3 w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"k7/6R1/5P2/8/8/8/5K2/7R w - - 0 1","n":1,"t":"Mate in 1"},{"fen":"r5k1/5ppp/8/8/8/8/3R1PPP/3R2K1 w - - 0 1","n":2,"t":"Doubled rooks"},{"fen":"6k1/8/8/8/8/8/R7/1R4K1 w - - 0 1","n":2,"t":"Rook ladder"},{"fen":"8/7k/2RR4/8/1p4p1/8/4K3/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"8/5R2/1pp2K2/8/4R3/8/8/7k w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"1R6/1p6/2R5/5K2/8/8/1k6/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"2R5/8/8/3p4/3R4/8/6p1/2K1k3 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"5K2/8/3p2p1/p7/Q7/1R6/7k/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"8/5p2/8/k2p3K/p2Q4/8/8/5R2 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"3R4/1R6/k7/8/8/2K5/8/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"3Q4/8/k7/p4K2/P7/5R2/8/8 w - - 0 1","n":2,"t":"Mate in 2"},{"fen":"8/p5b1/8/8/6RK/2P5/5k2/8 w - - 0 1","n":1,"t":"Hanging piece","sol":["g4g7"],"r":893,"tac":1},{"fen":"8/3n3K/6r1/1k6/4R1R1/8/p7/8 w - - 0 1","n":1,"t":"Fork","sol":["e4b4"],"r":1252,"tac":1},{"fen":"4r3/3qp3/7p/8/3Q3P/6p1/1P2k1K1/8 w - - 0 1","n":1,"t":"Hanging piece","sol":["d4d7"],"r":802,"tac":1},{"fen":"8/3P2K1/3N4/4pb1k/8/3r2p1/8/8 w - - 0 1","n":1,"t":"Win material","sol":["d7d8"],"r":1155,"tac":1},{"fen":"8/r7/8/N7/1k1K4/8/8/8 w - - 0 1","n":1,"t":"Fork","sol":["a5c6"],"r":1277,"tac":1},{"fen":"8/2p5/8/8/1kq1p1n1/2b5/8/1K4R1 w - - 0 1","n":1,"t":"Hanging piece","sol":["g1g4"],"r":858,"tac":1},{"fen":"4n3/P7/1P4NK/6B1/8/3pN3/8/k7 w - - 0 1","n":1,"t":"Fork","sol":["a7a8"],"r":1285,"tac":1},{"fen":"8/8/3N4/2K2n1k/8/8/6P1/n7 w - - 0 1","n":1,"t":"Hanging piece","sol":["d6f5"],"r":845,"tac":1},{"fen":"6BN/4P3/8/8/5b2/4k3/1Q6/6K1 w - - 0 1","n":1,"t":"Fork","sol":["e7e8"],"r":1226,"tac":1},{"fen":"8/1P4P1/3kN3/6pK/8/n7/1R6/b7 w - - 0 1","n":1,"t":"Fork","sol":["b7b8"],"r":1246,"tac":1},{"fen":"2K5/8/1k6/8/5b1N/q7/3N3r/8 w - - 0 1","n":1,"t":"Fork","sol":["d2c4"],"r":1277,"tac":1},{"fen":"7n/K3P3/2p5/8/8/7r/3r3k/N7 w - - 0 1","n":1,"t":"Win material","sol":["e7e8"],"r":1181,"tac":1},{"fen":"R7/1P2q3/1b5K/7p/1N2k3/8/8/8 w - - 0 1","n":1,"t":"Win material","sol":["b7b8"],"r":1123,"tac":1},{"fen":"3q4/8/8/3k4/8/8/8/R3K3 w - - 0 1","n":1,"t":"Skewer","sol":["a1d1"],"r":1400,"tac":1},{"fen":"4q3/8/8/4k3/8/8/8/K6R w - - 0 1","n":1,"t":"Skewer","sol":["h1e1"],"r":1450,"tac":1},{"fen":"4k3/3n4/8/1B6/8/8/8/3RK3 w - - 0 1","n":1,"t":"Pin","sol":["d1d7","b5c6"],"r":1300,"tac":1}];
 const PZ = {i: 0, g: null, left: 0, sel: null, last: null, hint: null, busy: false, solved: false, wrong: 0, flip: false, ready: false};
+const pzKey = () => 'pal_pz_' + (S.profile && !S.profile.is_guest ? S.profile.id : 'guest');
 function pzStore(v) {
-  try { if (v) localStorage.setItem('pal_pz', JSON.stringify(v)); else return JSON.parse(localStorage.getItem('pal_pz') || '{}'); } catch (e) { /* ignore */ }
-  return {};
+  try {
+    if (v) { v.u = Date.now(); localStorage.setItem(pzKey(), JSON.stringify(v)); progSave(); return v; }
+    let raw = localStorage.getItem(pzKey());
+    if (raw == null && S.profile && !S.profile.is_guest) { raw = localStorage.getItem('pal_pz'); if (raw) localStorage.setItem(pzKey(), raw); }   // adopt progress saved before syncing existed
+    return JSON.parse(raw || '{}');
+  } catch (e) { return {}; }
 }
 function pzMates(g, n) {   // first move that lets the side to move force mate within n moves, or null
   for (const m of g.moves()) {
@@ -1564,12 +1577,13 @@ function pzRoot() {
     <div class="pz-layout"><div id="pz-host" class="pz-host"><div class="board" id="pz-board" aria-label="Puzzle board"></div></div>
     <div class="pz-side"><div class="pz-meta" id="pz-meta"></div>
     <div class="pz-msg" id="pz-msg" role="status" aria-live="polite"></div>
-    <div class="pz-btns"><button class="btn ghost sm" id="pz-hint" type="button">Hint</button><button class="btn ghost sm" id="pz-show" type="button">Show answer</button><button class="btn ghost sm" id="pz-skip" type="button">Skip</button><button class="btn primary sm" id="pz-next" type="button">Next puzzle</button></div>
+    <div class="pz-btns"><button class="btn ghost sm" id="pz-hint" type="button">Hint</button><button class="btn ghost sm" id="pz-show" type="button">Show answer</button><button class="btn ghost sm" id="pz-daily" type="button">Daily puzzle</button><button class="btn ghost sm" id="pz-skip" type="button">Skip</button><button class="btn primary sm" id="pz-next" type="button">Next puzzle</button></div>
     <div class="muted pz-stat" id="pz-stat"></div></div></div>`;
   d.querySelector('#pz-board').addEventListener('click', e => { const q = e.target.closest('.sq'); if (q) pzClick(q.dataset.sq); });
   d.querySelector('#pz-hint').onclick = () => pzHelp(false);
   d.querySelector('#pz-show').onclick = () => pzHelp(true);
-  d.querySelector('#pz-skip').onclick = () => { const st = pzStore(); st.streak = 0; pzStore(st); pzNext(); };
+  d.querySelector('#pz-skip').onclick = () => { if (!PZ.solved) pzRate(0); const st = pzStore(); st.streak = 0; pzStore(st); pzNext(); };
+  d.querySelector('#pz-daily').onclick = () => { pzLoad(pzDailyIndex(), true); pzDraw(); };
   d.querySelector('#pz-next').onclick = pzNext;
   return d;
 }
@@ -1591,18 +1605,18 @@ function pzNext() {
   for (let k = 1; k <= PUZZLES.length; k++) { const j = (PZ.i + k) % PUZZLES.length; if (!done.includes(j)) { i = j; break; } i = j; }
   pzLoad(i); pzDraw();
 }
-function pzLoad(i) {
+function pzLoad(i, daily) {
   const p = PUZZLES[i]; PZ.i = i; PZ.g = new Chess(p.fen); PZ.left = p.n; PZ.sel = null; PZ.last = null; PZ.hint = null;
-  PZ.busy = false; PZ.solved = false; PZ.wrong = 0; PZ.flip = PZ.g.turn() === 'b';
-  PZ.msg = (PZ.g.turn() === 'w' ? 'White' : 'Black') + ' to move. Find the mate' + (p.n > 1 ? ' in ' + p.n : '') + '.';
+  PZ.busy = false; PZ.solved = false; PZ.wrong = 0; PZ.flip = PZ.g.turn() === 'b'; PZ.hinted = false; PZ.rated = false; PZ.daily = !!daily;
+  PZ.msg = (PZ.g.turn() === 'w' ? 'White' : 'Black') + ' to move. ' + (p.tac ? 'Find the move that wins material.' : 'Find the mate' + (p.n > 1 ? ' in ' + p.n : '') + '.');
 }
 function pzDraw() {
   const g = PZ.g; if (!g) return;
   const p = PUZZLES[PZ.i], st = pzStore(), done = st.solved || [];
-  $('pz-meta').innerHTML = `<b>${esc(p.t)}</b> · puzzle ${PZ.i + 1} of ${PUZZLES.length}${done.includes(PZ.i) ? ' · solved ✓' : ''}`;
+  $('pz-meta').innerHTML = `${PZ.daily ? '📅 Daily · ' : ''}<b>${esc(p.t)}</b> · rated ${p.r || (p.n > 1 ? 1150 : 750)} · ${PZ.i + 1}/${PUZZLES.length}${done.includes(PZ.i) ? ' · solved ✓' : ''}`;
   $('pz-msg').textContent = PZ.msg || '';
   $('pz-msg').className = 'pz-msg' + (PZ.solved ? ' good' : PZ.wrong && !PZ.busy ? ' bad' : '');
-  $('pz-stat').textContent = `Solved ${done.length}/${PUZZLES.length} · streak ${st.streak || 0} · best ${st.best || 0}`;
+  $('pz-stat').textContent = `Your puzzle rating ${st.rating || 1000} · solved ${done.length}/${PUZZLES.length} · streak ${st.streak || 0} (best ${st.best || 0}) · daily streak ${st.dstreak || 0}${st.dlast === pzDay() ? ' (done today ✓)' : ''}`;
   $('pz-next').classList.toggle('primary', PZ.solved);
   const brd = g.board(), turn = g.turn();
   let king = null;
@@ -1638,7 +1652,9 @@ function pzPlay(mv) {
   const g = PZ.g; PZ.sel = null; PZ.hint = null;
   const m = g.move({from: mv.from, to: mv.to, promotion: 'q'});
   PZ.last = {from: m.from, to: m.to};
+  const pz = PUZZLES[PZ.i];
   if (g.in_checkmate()) return pzWin();
+  if (pz.tac) return pz.sol.includes(m.from + m.to) ? pzWin('Correct! ' + pz.t + ' wins material.') : pzWrong();
   const good = PZ.left > 1 && !g.game_over() && g.moves().every(r => { g.move(r); const k = pzMates(g, PZ.left - 1); g.undo(); return !!k; });
   if (good) {
     PZ.busy = true; PZ.msg = 'Good move. Keep going…'; pzDraw();
@@ -1648,34 +1664,125 @@ function pzPlay(mv) {
     }, 550);
     return;
   }
-  PZ.wrong++; PZ.busy = true; PZ.msg = 'Not quite. That does not force checkmate.'; pzDraw();
-  const st = pzStore(); st.streak = 0; pzStore(st);
+  pzWrong();
+}
+function pzWrong() {
+  const g = PZ.g;
+  PZ.wrong++; PZ.busy = true; PZ.msg = PUZZLES[PZ.i].tac ? 'Not quite. That does not win material.' : 'Not quite. That does not force checkmate.'; pzDraw();
+  const st = pzStore(); st.streak = 0; pzStore(st); pzRate(0);
   setTimeout(() => { g.undo(); PZ.last = null; PZ.busy = false; pzDraw(); }, 800);
 }
-function pzWin() {
-  PZ.solved = true; PZ.msg = 'Checkmate! Puzzle solved.' + (PZ.wrong ? '' : ' First try.'); 
+function pzWin(msg) {
+  PZ.solved = true; PZ.msg = (msg || 'Checkmate! Puzzle solved.') + (PZ.wrong ? '' : ' First try.');
   const st = pzStore(); st.solved = st.solved || [];
   if (!st.solved.includes(PZ.i)) st.solved.push(PZ.i);
   st.streak = (st.streak || 0) + (PZ.wrong ? 0 : 1); st.best = Math.max(st.best || 0, st.streak);
-  pzStore(st); pzDraw();
+  pzStore(st); pzRate(PZ.wrong ? 0 : PZ.hinted ? 0.5 : 1);
+  if (PZ.daily) pzDailyDone();
+  pzDraw(); achCheck();
 }
 function pzHelp(full) {
   const g = PZ.g; if (!g || PZ.busy || PZ.solved) return;
-  const san = pzMates(g, PZ.left); if (!san) return;
-  const mv = g.moves({verbose: true}).find(m => m.san === san);
+  const pz = PUZZLES[PZ.i], all = g.moves({verbose: true});
+  const mv = pz.tac ? all.find(m => m.from + m.to === pz.sol[0]) : all.find(m => m.san === pzMates(g, PZ.left));
+  if (!mv) return;
   PZ.sel = null; PZ.hint = full ? [mv.from, mv.to] : [mv.from];
-  PZ.msg = full ? 'One answer is ' + san + '.' : 'Look at the highlighted piece.';
+  PZ.msg = full ? 'One answer is ' + mv.san + '.' : 'Look at the highlighted piece.';
+  PZ.hinted = true; if (full) pzRate(0);
   const st = pzStore(); st.streak = 0; pzStore(st); pzDraw();
 }
 
+function pzRate(res) {   // Elo-style puzzle rating, updated once per puzzle (first outcome counts)
+  if (PZ.rated) return; PZ.rated = true;
+  const pz = PUZZLES[PZ.i], st = pzStore(), pr = pz.r || (pz.n > 1 ? 1150 : 750), me = st.rating || 1000;
+  st.rating = Math.max(100, Math.round(me + 24 * (res - 1 / (1 + Math.pow(10, (pr - me) / 400)))));
+  pzStore(st);
+}
+const pzDay = d => (d || new Date()).toLocaleDateString('en-CA');
+function pzDailyIndex() { let h = 0; for (const c of pzDay()) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % PUZZLES.length; }
+function pzDailyDone() {
+  const st = pzStore(), t = pzDay(); if (st.dlast === t) return;
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  st.dstreak = st.dlast === pzDay(y) ? (st.dstreak || 0) + 1 : 1; st.dbest = Math.max(st.dbest || 0, st.dstreak); st.dlast = t; pzStore(st);
+}
+
+/* ═════════════ Achievements and badges (saved per account on this device) ═════════════ */
+const ACH = [
+  ['first_win', '🏆', 'First victory', 'Win your first game.', c => [c.p.wins || 0, 1]],
+  ['wins10', '⚔️', 'Seasoned fighter', 'Win 10 games.', c => [c.p.wins || 0, 10]],
+  ['games25', '🛡️', 'Veteran', 'Play 25 games.', c => [(c.p.wins || 0) + (c.p.losses || 0) + (c.p.draws || 0), 25]],
+  ['streak3', '🔥', 'On a roll', 'Reach a 3-day streak.', c => [Math.max(c.p.streak_best || 0, c.p.streak_current || 0), 3]],
+  ['streak7', '🔥', 'Week of war', 'Reach a 7-day streak.', c => [Math.max(c.p.streak_best || 0, c.p.streak_current || 0), 7]],
+  ['streak30', '👑', 'Unyielding', 'Reach a 30-day streak.', c => [Math.max(c.p.streak_best || 0, c.p.streak_current || 0), 30]],
+  ['rate200', '📈', 'Rising knight', 'Reach a rating of 200.', c => [bestRating(c.p), 200]],
+  ['pz1', '🧩', 'Puzzler', 'Solve your first puzzle.', c => [(c.z.solved || []).length, 1]],
+  ['pz10', '🧠', 'Tactician', 'Solve 10 puzzles.', c => [(c.z.solved || []).length, 10]],
+  ['pzall', '📜', 'Grand strategist', 'Solve every puzzle.', c => [(c.z.solved || []).length, PUZZLES.length]],
+  ['pzrow5', '🎯', 'Sharp eye', 'Solve 5 puzzles in a row, first try.', c => [c.z.best || 0, 5]],
+  ['pzrow10', '🎯', 'Unerring', 'Solve 10 puzzles in a row, first try.', c => [c.z.best || 0, 10]],
+  ['daily3', '📅', 'Daily devotion', 'Finish the daily puzzle 3 days in a row.', c => [c.z.dbest || 0, 3]],
+  ['pzr1200', '🏰', 'Puzzle master', 'Reach a puzzle rating of 1200.', c => [c.z.rating || 1000, 1200]],
+];
+const achKey = () => 'pal_ach_' + (S.profile && !S.profile.is_guest ? S.profile.id : 'guest');
+function achGot() { try { return JSON.parse(localStorage.getItem(achKey()) || '{}'); } catch (e) { return {}; } }
+const achCtx = () => ({p: S.profile && !S.profile.is_guest ? S.profile : {}, z: pzStore()});
+function achCheck() {
+  try {
+    const got = achGot(), c = achCtx(); let n = 0;
+    ACH.forEach(a => {
+      if (got[a[0]]) return;
+      const r = a[4](c); if (r[0] < r[1]) return;
+      got[a[0]] = Date.now(); const k = n++;
+      setTimeout(() => toast(`${a[1]} Achievement unlocked: ${a[2]}`), 900 * k);
+    });
+    if (n) { localStorage.setItem(achKey(), JSON.stringify(got)); achRender(); progSave(); }
+  } catch (e) { /* storage unavailable */ }
+}
+
+/* ═════════════ Progress sync: puzzles and badges follow the account on Supabase (table user_progress, see user-progress.sql) ═════════════ */
+function progSave() {
+  if (!S.progReady || !S.profile || S.profile.is_guest) return;
+  clearTimeout(S.progT);
+  S.progT = setTimeout(async () => {
+    const {error} = await sb.from('user_progress').upsert({user_id: S.profile.id, puzzle: pzStore(), achievements: achGot(), updated_at: new Date().toISOString()});
+    if (error) console.error('Progress save failed: ' + error.message);
+  }, 1500);
+}
+async function progSync() {
+  const p = S.profile; if (!p || p.is_guest || S.progFor === p.id) return;
+  S.progFor = p.id; S.progReady = false;
+  const {data, error} = await sb.from('user_progress').select('puzzle, achievements').eq('user_id', p.id).maybeSingle();
+  if (error) { console.error('Progress load failed (run user-progress.sql): ' + error.message); return; }   // stays on this device only
+  const lz = pzStore(), la = achGot(), rz = (data && data.puzzle) || {}, ra = (data && data.achievements) || {};
+  const base = (rz.u || 0) > (lz.u || 0) ? rz : lz;
+  const z = Object.assign({}, base, {
+    solved: Array.from(new Set([...(lz.solved || []), ...(rz.solved || [])])),
+    best: Math.max(lz.best || 0, rz.best || 0), dbest: Math.max(lz.dbest || 0, rz.dbest || 0), u: Math.max(lz.u || 0, rz.u || 0),
+  });
+  const a = Object.assign({}, ra); for (const k in la) a[k] = Math.min(la[k], a[k] || la[k]);
+  try { localStorage.setItem(pzKey(), JSON.stringify(z)); localStorage.setItem(achKey(), JSON.stringify(a)); } catch (e) { /* ignore */ }
+  S.progReady = true; progSave();
+  try { achCheck(); achRender(); if (PZ.g && $('pz-stat')) pzDraw(); } catch (e) { /* views not built yet */ }
+}
+function achRoot() { const d = document.createElement('div'); d.id = 'ach-root'; return d; }
+function achRender() {
+  const el = document.getElementById('ach-root'); if (!el) return;
+  const got = achGot(), c = achCtx(), n = ACH.filter(a => got[a[0]]).length;
+  el.innerHTML = `<h2>Badges</h2><div class="muted" style="margin-bottom:12px">${n} of ${ACH.length} unlocked</div><div class="ach-grid">${ACH.map(a => {
+    const r = a[4](c), on = !!got[a[0]];
+    return `<div class="ach${on ? ' on' : ''}"><div class="ach-i">${a[1]}</div><b>${esc(a[2])}</b><div class="muted">${esc(a[3])}</div>${on ? `<div class="ach-d">Unlocked ${esc(new Date(got[a[0]]).toLocaleDateString())}</div>` : `<div class="st-bar"><i style="width:${Math.min(100, Math.round(r[0] / r[1] * 100))}%"></i></div><div class="muted ach-p">${Math.min(r[0], r[1])} / ${r[1]}</div>`}</div>`;
+  }).join('')}</div>`;
+}
+
 /* ═════════════ Lobby: side bar with tabs (Play, Game modes, Profile, Friends, Leaderboard) ═════════════ */
-const LOBBY_TABS = [['play', 'Play'], ['modes', 'Game modes'], ['puzzles', 'Puzzles'], ['profile', 'Profile'], ['friends', 'Friends']];
+const LOBBY_TABS = [['play', 'Play'], ['modes', 'Game modes'], ['puzzles', 'Puzzles'], ['badges', 'Badges'], ['profile', 'Profile'], ['friends', 'Friends']];
 function lobbyTab(id) {
   document.querySelectorAll('#view-lobby .lpane').forEach(p => p.classList.toggle('hidden', p.dataset.lp !== id));
   document.querySelectorAll('#view-lobby .lobby-nav button').forEach(b => { b.classList.toggle('on', b.dataset.lp === id); b.setAttribute('aria-selected', b.dataset.lp === id ? 'true' : 'false'); });
   try { sessionStorage.setItem('pal_lobbytab', id); } catch (e) { /* ignore */ }
   const lg = document.querySelector('#view-lobby .lobby-grid'); if (lg) lg.classList.toggle('pz-on', id === 'puzzles');
   if (id === 'puzzles') setTimeout(pzShow, 0);
+  if (id === 'badges') setTimeout(achRender, 0);
 }
 function buildLobbyNav() {
   const grid = document.querySelector('#view-lobby .lobby-grid');
@@ -1689,6 +1796,7 @@ function buildLobbyNav() {
     pane('play', [hPlay, g('acc-single'), g('acc-multi')]),
     pane('modes', [hModes, g('acc-four'), g('acc-kfc'), g('acc-watch'), g('open-setup'), g('open-saved')]),
     pane('puzzles', [pzRoot()]),
+    pane('badges', [achRoot()]),
     pane('profile', [g('me-card')]),
     pane('friends', [g('friends-block')]),
     g('ad-lobby')
@@ -2057,6 +2165,7 @@ function renderLobby() {
 function renderMeCard() {
   const p = S.profile;
   applyModeLocks();
+  try { progSync(); achCheck(); } catch (e) { /* not ready yet */ }
   if (p && p.is_guest) { $('me-card').innerHTML = '<div class="me"><div><div class="me-name">Playing as a guest</div><div class="muted">Guests can join games but not host them. Their games are unrated. Create an account to host, add friends and get a rating.</div></div></div>'; return; }
   $('me-card').innerHTML = p ? `<div class="me"><div class="me-rate">${p.rating}</div><div><div class="me-name">${esc(p.username)}${titleBadge(bestRating(p), true)}</div><div class="muted">${p.wins} wins, ${p.losses} losses, ${p.draws} draws</div><div class="muted small">2-player: Standard ${p.rating}, Bullet ${p.rating_bullet}, Blitz ${p.rating_blitz}</div><div class="muted small">4-player: Bullet ${p.rating4_bullet}, Blitz ${p.rating4_blitz}, Standard ${p.rating4_std}</div><div class="muted small">${p.streak_current > 0 ? `🔥 ${p.streak_current}-day streak (best ${p.streak_best})` : 'No active streak - play a game today to start one.'}</div></div></div>` : '';
 }
