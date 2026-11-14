@@ -655,11 +655,15 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 #view-game[data-board="medieval"] .sq.light,#view-game[data-board="medieval"] .sq.dark,#view-kfc[data-board="medieval"] .sq.light,#view-kfc[data-board="medieval"] .sq.dark{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .28 0 0 0 0 .2 0 0 0 0 .1 0 0 0 .3 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:140px 140px}
 #view-game[data-board="medieval"] .sq.dark .co,#view-kfc[data-board="medieval"] .sq.dark .co{color:#d8c8a4}
 #view-game[data-board="medieval"] .sq.light .co,#view-kfc[data-board="medieval"] .sq.light .co{color:#5f4a36}
-.pz-host{max-width:520px;width:100%;margin:10px 0}
+.pz-layout{display:flex;gap:22px;align-items:flex-start}
+.pz-host{flex:0 0 auto;width:min(480px,calc(100vh - 150px));min-width:240px;margin:8px 0}
+.pz-side{flex:1;min-width:170px;padding-top:8px;position:sticky;top:84px}
+@media (max-width:640px){.pz-layout{flex-direction:column;gap:6px}.pz-host{width:min(100%,calc(100vh - 330px))}.pz-side{position:static;padding-top:0;width:100%}}
 .pz-meta{font-size:14px;margin:2px 0 6px}
 .pz-msg{min-height:22px;margin:8px 0;font-weight:600}
 .pz-msg.good{color:#59c38e}.pz-msg.bad{color:#e0615a}
 .pz-btns{display:flex;gap:8px;flex-wrap:wrap}
+.pz-btns .btn{flex:1 1 40%}
 .pz-stat{margin-top:10px;font-size:13px}
 </style>
 </head>
@@ -1543,11 +1547,12 @@ function pzMates(g, n) {   // first move that lets the side to move force mate w
 }
 function pzRoot() {
   const d = document.createElement('div'); d.id = 'pz-root';
-  d.innerHTML = `<h2>Puzzles</h2><div class="pz-meta" id="pz-meta"></div>
-    <div id="pz-host" class="pz-host"><div class="board" id="pz-board" aria-label="Puzzle board"></div></div>
+  d.innerHTML = `<h2>Puzzles</h2>
+    <div class="pz-layout"><div id="pz-host" class="pz-host"><div class="board" id="pz-board" aria-label="Puzzle board"></div></div>
+    <div class="pz-side"><div class="pz-meta" id="pz-meta"></div>
     <div class="pz-msg" id="pz-msg" role="status" aria-live="polite"></div>
     <div class="pz-btns"><button class="btn ghost sm" id="pz-hint" type="button">Hint</button><button class="btn ghost sm" id="pz-show" type="button">Show answer</button><button class="btn ghost sm" id="pz-skip" type="button">Skip</button><button class="btn primary sm" id="pz-next" type="button">Next puzzle</button></div>
-    <div class="muted pz-stat" id="pz-stat"></div>`;
+    <div class="muted pz-stat" id="pz-stat"></div></div></div>`;
   d.querySelector('#pz-board').addEventListener('click', e => { const q = e.target.closest('.sq'); if (q) pzClick(q.dataset.sq); });
   d.querySelector('#pz-hint').onclick = () => pzHelp(false);
   d.querySelector('#pz-show').onclick = () => pzHelp(true);
