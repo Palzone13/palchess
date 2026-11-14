@@ -656,7 +656,7 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 #view-game[data-board="medieval"] .sq.dark .co,#view-kfc[data-board="medieval"] .sq.dark .co{color:#d8c8a4}
 #view-game[data-board="medieval"] .sq.light .co,#view-kfc[data-board="medieval"] .sq.light .co{color:#5f4a36}
 .pz-layout{display:flex;gap:22px;align-items:flex-start}
-.pz-host,#pz-host.pz-host{--bs:max(280px,min(calc(100vw - 640px),calc(100vh - 210px),680px));width:var(--bs);flex:0 0 auto;margin:8px 0}
+.pz-host,#pz-host.pz-host{--bs:max(280px,min(calc(100vw - 840px),calc(100vh - 210px),680px));width:var(--bs);flex:0 0 auto;margin:8px 0}
 .pz-side{flex:0 0 300px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:8px;position:sticky;top:84px}
 .lobby-grid.pz-on{grid-template-columns:190px minmax(0,1fr)}
 .lobby-grid.pz-on .lobby-board{display:none}
@@ -669,6 +669,15 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .pz-btns{display:flex;gap:8px;flex-wrap:wrap}
 .pz-btns .btn{flex:1 1 40%}
 .pz-stat{margin-top:10px;font-size:13px}
+
+/* Puzzles page: centre the board and panel in the page */
+.lobby-grid.pz-on{grid-template-columns:190px minmax(0,1fr) 190px}
+.lobby-grid.pz-on::after{content:""}
+.lobby-grid.pz-on .lobby-main{display:flex;flex-direction:column;align-items:center}
+.lobby-grid.pz-on .pz-layout{justify-content:center}
+#pz-root{width:fit-content;max-width:100%}
+@media (max-width:1100px){.lobby-grid.pz-on{grid-template-columns:190px minmax(0,1fr)}.lobby-grid.pz-on::after{display:none}}
+@media (max-width:760px){.lobby-grid.pz-on{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
