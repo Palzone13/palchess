@@ -620,6 +620,14 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .adm-list{list-style:none;margin:8px 0 0;padding:0;max-height:240px;overflow:auto;display:flex;flex-direction:column;gap:6px}
 .adm-list li{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border-radius:8px;padding:8px 10px;font-size:13px}
 .adm-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+
+.admin-panel{width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 90px);overflow:auto}
+.adm-body{display:flex;gap:14px;align-items:flex-start}
+.adm-main{flex:1;min-width:0}
+.adm-body>.adm-tabs{flex:0 0 118px;flex-direction:column;flex-wrap:nowrap;gap:2px;margin:6px 0 0;border-bottom:0;border-right:1px solid var(--line);padding-right:8px;position:sticky;top:0}
+.adm-body>.adm-tabs button{text-align:left;border-bottom:0;border-left:2px solid transparent;padding:8px 10px;border-radius:0 6px 6px 0;width:100%}
+.adm-body>.adm-tabs button.on{border-left-color:var(--gold);background:var(--panel2)}
+@media (max-width:560px){.adm-body{flex-direction:column}.adm-body>.adm-tabs{flex:none;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:0 0 6px;position:static}.adm-body>.adm-tabs button{width:auto;border-left:0;border-bottom:2px solid transparent;border-radius:0}.adm-body>.adm-tabs button.on{border-bottom-color:var(--gold)}}
 </style>
 </head>
 <body>
@@ -1417,17 +1425,19 @@ function showAdminMenu() {
 function adminExtras(panel) {
   const box = panel.querySelector('#admin-analysis'), acts = panel.querySelector('.admin-actions');
   const mk = (id, html) => { const d = document.createElement('div'); d.className = 'adm-pane'; d.dataset.pane = id; d.innerHTML = html || ''; return d; };
-  const pA = mk('analysis'), pT = mk('tools'), pS = mk('server'), pI = mk('info'), pP = mk('players'), pL = mk('logs'), pW = mk('site'), pE = mk('powers');
-  adminPowers(pE);
+  const pA = mk('analysis'), pT = mk('tools'), pS = mk('server'), pI = mk('info'), pP = mk('players'), pL = mk('logs'), pW = mk('site'), pE = mk('powers'), pM = mk('modes');
+  adminPowers(pE); adminModes(pM);
   adminPlayers(pP); adminLogs(pL); adminSite(pW);
   pA.append(box, acts);
   pA.insertAdjacentHTML('afterbegin', `<div class="adm-set"><label>Think time <select id="adm-ms">${[3, 6, 12, 20].map(n => `<option value="${n * 1000}"${(S.adminMs || 6000) === n * 1000 ? ' selected' : ''}>${n}s</option>`).join('')}</select></label><label><input type="checkbox" id="adm-arrow"${S.adminHideArrow ? '' : ' checked'}> Board arrow</label></div>`);
   pT.innerHTML = `<div class="adm-grid"><button class="btn ghost sm" data-t="fen">Copy FEN</button><button class="btn ghost sm" data-t="pgn">Copy PGN</button><button class="btn ghost sm" data-t="engine">Reload engine</button><button class="btn ghost sm" data-t="stats">Clear saved stats</button></div><div class="admin-meta" id="adm-tmsg"></div>`;
   pS.innerHTML = `<div class="admin-actions"><button class="btn ghost sm" id="adm-refresh" type="button">Refresh</button></div><div class="admin-meta" id="adm-count">Not loaded.</div><ul class="adm-list" id="adm-games"></ul>`;
   const tabs = document.createElement('div'); tabs.className = 'adm-tabs';
-  tabs.innerHTML = [['analysis', 'Analysis'], ['powers', 'Elo & Modes'], ['players', 'Players'], ['server', 'Server'], ['site', 'Site'], ['logs', 'Logs'], ['tools', 'Tools'], ['info', 'Info']].map(t => `<button type="button" data-tab="${t[0]}">${t[1]}</button>`).join('');
-  panel.querySelector('p').after(tabs);
-  tabs.after(pA, pE, pP, pS, pW, pL, pT, pI);
+  tabs.innerHTML = [['analysis', 'Analysis'], ['modes', 'Game modes'], ['powers', 'Elo & Modes'], ['players', 'Players'], ['server', 'Server'], ['site', 'Site'], ['logs', 'Logs'], ['tools', 'Tools'], ['info', 'Info']].map(t => `<button type="button" data-tab="${t[0]}">${t[1]}</button>`).join('');
+  const wrap = document.createElement('div'), main = document.createElement('div');
+  wrap.className = 'adm-body'; main.className = 'adm-main';
+  main.append(pA, pM, pE, pP, pS, pW, pL, pT, pI); wrap.append(tabs, main);
+  panel.querySelector('p').after(wrap);
   const show = id => {
     panel.querySelectorAll('.adm-pane').forEach(e => e.classList.toggle('hidden', e.dataset.pane !== id));
     tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
@@ -1479,6 +1489,31 @@ function adminInfoHtml() {
     + row('Position', g ? g.fen().split(' ').slice(0, 2).join(' ') : '—') + row('Moves played', g ? g.history().length : 0)
     + row('Online game', S.online && S.online.row ? S.online.row.status + ' · ' + (S.online.row.code || String(S.online.row.id).slice(0, 6)) : '—')
     + row('Saved accuracy games', life.length) + row('Coach', COACH.on ? 'on' : 'off') + row('Think time', ((S.adminMs || 6000) / 1000) + 's');
+}
+
+/* ═════════════ Admin: special game modes tab ═════════════ */
+function adminModes(pane) {
+  const MODES = [
+    ['four', '4 Player', 'Four colours, one board, last one standing wins.', 'acc-four'],
+    ['kfc', 'Kung Fu Chess', 'No turns. Move any ready piece, any time.', 'acc-kfc'],
+    ['watch', 'Watch live', 'See the games people are playing right now.', 'acc-watch'],
+    ['setup', 'Setup position', 'Arrange pieces, move them freely and draw arrows.', 'open-setup'],
+    ['saved', 'Open saved game', 'Replay a game from a link.', 'open-saved'],
+  ];
+  pane.refresh = () => {
+    const off = (S.profile && Array.isArray(S.profile.modes_off)) ? S.profile.modes_off : [];
+    pane.innerHTML = `<div class="admin-meta">Special game modes. Open one to jump straight to it from anywhere.</div><ul class="adm-list">${MODES.map(m => `<li><span><b>${m[1]}</b>${off.includes(m[0]) ? ' <span class="muted">(removed on your account)</span>' : ''}<br><span class="muted">${m[2]}</span></span><button class="btn primary sm" data-open="${m[3]}">Open</button></li>`).join('')}</ul>`;
+  };
+  pane.onclick = e => {
+    const b = e.target.closest('[data-open]'); if (!b) return;
+    const el = $(b.dataset.open); if (!el) return toast('That mode is not available.', true);
+    showView('lobby');
+    setTimeout(() => {
+      el.classList.remove('hidden');
+      if (el.classList.contains('acc-link')) el.click();
+      else { const h = el.querySelector('.acc-h'); if (h && h.getAttribute('aria-expanded') !== 'true') h.click(); el.scrollIntoView({behavior: 'smooth', block: 'center'}); }
+    }, 60);
+  };
 }
 
 /* ═════════════ Admin: give / remove Elo and special game modes ═════════════ */
