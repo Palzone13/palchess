@@ -2238,6 +2238,12 @@ async function acceptDraw() {
   const d = await pushPatch({status: 'finished', result: '1/2-1/2', reason: 'agreement', draw_offer: null}, {status: 'active'});
   if (d) { S.over = {result: '1/2-1/2', reason: 'agreement'}; render(); settle(); }
 }
+async function deleteBotMatch(id) {
+  try {
+    const r = await sb.rpc('delete_bot_match', {gid: id});
+    if (r.error) await sb.from('games').delete().eq('id', id);   // fallback if the function is not installed
+  } catch (e) { console.warn('Could not delete bot game', e); }
+}
 async function settleBot(result) {
   if (!S.botMatchId || S.botResultSettled) return;
   S.botResultSettled = true;
@@ -2251,6 +2257,7 @@ async function settleBot(result) {
     toast(error.message, true);
     return;
   }
+  deleteBotMatch(matchId);   // the bot game is over and the result is recorded, so remove its row from Supabase
   await loadProfile();
   renderUserBox(); render();
   const row = Array.isArray(data) ? data[0] : data;
