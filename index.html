@@ -609,7 +609,7 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .g-cur{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.7}
 .st-moments{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 
-.adm-tabs{display:flex;gap:4px;margin:10px 0;border-bottom:1px solid var(--line)}
+.adm-tabs{display:flex;flex-wrap:wrap;gap:2px 4px;margin:10px 0;border-bottom:1px solid var(--line)}
 .adm-tabs button{background:none;border:0;color:var(--muted);padding:6px 10px;font:600 13px var(--f-body);cursor:pointer;border-bottom:2px solid transparent}
 .adm-tabs button.on{color:var(--gold);border-bottom-color:var(--gold)}
 .adm-set{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}
@@ -1123,13 +1123,12 @@ const S = {
 const PC = {}; // profile cache
 
 function showView(name) {
-  if (name !== 'game') closeAdminMenu();
   if (name !== 'kfc') kfcStop();
   document.body.dataset.view = name;
   ['auth', 'lobby', 'game', 'game4', 'kfc', 'setup'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== name));
   if (name === 'lobby' || name === 'game' || name === 'game4') ensureAd(name);
   const ab = $('btn-admin');
-  if (ab) { ab.classList.toggle('hidden', !(name === 'game' && isPalAdmin())); if (name !== 'game') closeAdminMenu(); }
+  if (ab) ab.classList.toggle('hidden', !isPalAdmin() || name === 'auth');
   if (name !== 'lobby') clearInterval(S.lobbyTimer);
   window.scrollTo(0, 0);
 }
@@ -1416,19 +1415,21 @@ function showAdminMenu() {
 function adminExtras(panel) {
   const box = panel.querySelector('#admin-analysis'), acts = panel.querySelector('.admin-actions');
   const mk = (id, html) => { const d = document.createElement('div'); d.className = 'adm-pane'; d.dataset.pane = id; d.innerHTML = html || ''; return d; };
-  const pA = mk('analysis'), pT = mk('tools'), pS = mk('server'), pI = mk('info');
+  const pA = mk('analysis'), pT = mk('tools'), pS = mk('server'), pI = mk('info'), pP = mk('players'), pL = mk('logs'), pW = mk('site');
+  adminPlayers(pP); adminLogs(pL); adminSite(pW);
   pA.append(box, acts);
   pA.insertAdjacentHTML('afterbegin', `<div class="adm-set"><label>Think time <select id="adm-ms">${[3, 6, 12, 20].map(n => `<option value="${n * 1000}"${(S.adminMs || 6000) === n * 1000 ? ' selected' : ''}>${n}s</option>`).join('')}</select></label><label><input type="checkbox" id="adm-arrow"${S.adminHideArrow ? '' : ' checked'}> Board arrow</label></div>`);
   pT.innerHTML = `<div class="adm-grid"><button class="btn ghost sm" data-t="fen">Copy FEN</button><button class="btn ghost sm" data-t="pgn">Copy PGN</button><button class="btn ghost sm" data-t="engine">Reload engine</button><button class="btn ghost sm" data-t="stats">Clear saved stats</button></div><div class="admin-meta" id="adm-tmsg"></div>`;
   pS.innerHTML = `<div class="admin-actions"><button class="btn ghost sm" id="adm-refresh" type="button">Refresh</button></div><div class="admin-meta" id="adm-count">Not loaded.</div><ul class="adm-list" id="adm-games"></ul>`;
   const tabs = document.createElement('div'); tabs.className = 'adm-tabs';
-  tabs.innerHTML = [['analysis', 'Analysis'], ['tools', 'Tools'], ['server', 'Server'], ['info', 'Info']].map(t => `<button type="button" data-tab="${t[0]}">${t[1]}</button>`).join('');
+  tabs.innerHTML = [['analysis', 'Analysis'], ['players', 'Players'], ['server', 'Server'], ['site', 'Site'], ['logs', 'Logs'], ['tools', 'Tools'], ['info', 'Info']].map(t => `<button type="button" data-tab="${t[0]}">${t[1]}</button>`).join('');
   panel.querySelector('p').after(tabs);
-  tabs.after(pA, pT, pS, pI);
+  tabs.after(pA, pP, pS, pW, pL, pT, pI);
   const show = id => {
     panel.querySelectorAll('.adm-pane').forEach(e => e.classList.toggle('hidden', e.dataset.pane !== id));
     tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
     if (id === 'info') pI.innerHTML = adminInfoHtml();
+    panel.querySelectorAll('.adm-pane').forEach(e => { if (e.dataset.pane === id && e.refresh) e.refresh(); });
     if (id === 'server' && !S.adminLoaded) loadAdminGames();
   };
   tabs.onclick = e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); };
@@ -1477,10 +1478,82 @@ function adminInfoHtml() {
     + row('Saved accuracy games', life.length) + row('Coach', COACH.on ? 'on' : 'off') + row('Think time', ((S.adminMs || 6000) / 1000) + 's');
 }
 
+/* ═════════════ Admin: players, site tools, error log (not game-specific) ═════════════ */
+const ADM_LOG = [];
+(function () {
+  const push = (k, m) => { ADM_LOG.push({t: new Date().toLocaleTimeString(), k, m: String(m).slice(0, 400)}); if (ADM_LOG.length > 100) ADM_LOG.shift(); };
+  window.addEventListener('error', e => push('error', (e.message || 'error') + (e.lineno ? ' (line ' + e.lineno + ')' : '')));
+  window.addEventListener('unhandledrejection', e => push('promise', (e.reason && e.reason.message) || e.reason));
+  const ce = console.error;
+  console.error = function () { push('console', [].map.call(arguments, a => (a && a.message) || a).join(' ')); return ce.apply(console, arguments); };
+})();
+function admDownload(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: type || 'application/json'}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function adminPlayers(pane) {
+  pane.innerHTML = `<div class="adm-set"><input id="adm-q" type="search" placeholder="Search players" aria-label="Search players" style="flex:1;min-width:0"><button class="btn ghost sm" id="adm-pex" type="button">Export</button></div><div class="admin-meta" id="adm-pcount">Not loaded.</div><ul class="adm-list" id="adm-plist"></ul>`;
+  let rows = [];
+  const draw = () => {
+    const q = ($('adm-q').value || '').trim().toLowerCase();
+    const list = rows.filter(r => !q || String(r.username || '').toLowerCase().includes(q));
+    $('adm-pcount').textContent = `${list.length} of ${rows.length} players${rows.length >= 200 ? ' (first 200)' : ''}.`;
+    $('adm-plist').innerHTML = list.map(r => `<li><span><b>${esc(r.username || '—')}</b>${r.rating != null ? ' · ' + esc(String(r.rating)) : ''}<br><span class="muted">${esc(String(r.id).slice(0, 8))}</span></span><button class="btn ghost sm" data-id="${esc(String(r.id))}">Copy ID</button></li>`).join('') || '<li class="muted">No matches.</li>';
+  };
+  pane.refresh = async () => {
+    if (rows.length) return;
+    $('adm-pcount').textContent = 'Loading…';
+    const {data, error} = await sb.from('profiles').select('*').limit(200);
+    if (error) { $('adm-pcount').textContent = 'Could not load players: ' + error.message; return; }
+    rows = data || []; draw();
+  };
+  pane.onclick = e => {
+    const b = e.target.closest('[data-id]');
+    if (b && navigator.clipboard) navigator.clipboard.writeText(b.dataset.id).then(() => toast('ID copied.'));
+    if (e.target.id === 'adm-pex') { if (!rows.length) return toast('Nothing loaded yet.', true); admDownload('players.json', JSON.stringify(rows, null, 2)); }
+  };
+  pane.addEventListener('input', e => { if (e.target.id === 'adm-q') draw(); });
+}
+function adminLogs(pane) {
+  const draw = () => {
+    pane.innerHTML = `<div class="admin-actions" style="margin-bottom:8px"><button class="btn ghost sm" data-l="copy" type="button">Copy</button><button class="btn ghost sm" data-l="clear" type="button">Clear</button></div><ul class="adm-list">${ADM_LOG.slice().reverse().map(l => `<li><span><b>${esc(l.k)}</b> <span class="muted">${esc(l.t)}</span><br>${esc(l.m)}</span></li>`).join('') || '<li class="muted">No errors recorded this session.</li>'}</ul>`;
+  };
+  pane.refresh = draw;
+  pane.onclick = e => {
+    const b = e.target.closest('[data-l]'); if (!b) return;
+    if (b.dataset.l === 'clear') { ADM_LOG.length = 0; draw(); }
+    else if (navigator.clipboard) navigator.clipboard.writeText(ADM_LOG.map(l => `${l.t} [${l.k}] ${l.m}`).join('\n')).then(() => toast('Log copied.'));
+  };
+}
+function adminSite(pane) {
+  pane.innerHTML = `<div class="adm-grid"><button class="btn ghost sm" data-s="ping">Ping server</button><button class="btn ghost sm" data-s="reload">Reload page</button><button class="btn ghost sm" data-s="link">Copy site link</button><button class="btn ghost sm" data-s="clear">Clear local data</button></div><div id="adm-site-out"></div>`;
+  const rowH = (k, v) => `<div class="adm-row"><span class="muted">${k}</span><span>${esc(String(v))}</span></div>`;
+  const info = (extra) => {
+    let n = 0, bytes = 0;
+    try { n = localStorage.length; for (let i = 0; i < n; i++) { const k = localStorage.key(i); bytes += k.length + (localStorage.getItem(k) || '').length; } } catch (e) { /* unavailable */ }
+    $('adm-site-out').innerHTML = rowH('Connection', navigator.onLine ? 'online' : 'offline') + rowH('Local storage', `${n} keys · ${(bytes / 1024).toFixed(1)} KB`) + rowH('Screen', `${innerWidth}×${innerHeight} @${devicePixelRatio}x`) + rowH('Browser', navigator.userAgent.slice(0, 80)) + (extra || '');
+  };
+  pane.refresh = () => info();
+  pane.onclick = async e => {
+    const b = e.target.closest('[data-s]'); if (!b) return;
+    const t = b.dataset.s;
+    if (t === 'reload') location.reload();
+    else if (t === 'link') { if (navigator.clipboard) navigator.clipboard.writeText(location.origin + location.pathname).then(() => toast('Site link copied.')); }
+    else if (t === 'clear') { if (confirm('Clear all saved data on this device? You will be signed out.')) { try { localStorage.clear(); sessionStorage.clear(); } catch (x) { /* ignore */ } location.reload(); } }
+    else if (t === 'ping') {
+      const t0 = performance.now();
+      const {error} = await sb.from('profiles').select('id', {count: 'exact', head: true});
+      info(rowH('Server ping', error ? 'failed: ' + error.message : Math.round(performance.now() - t0) + ' ms'));
+    }
+  };
+}
+
 function renderUserBox() {
   const adminBtn = $('btn-admin');
   if (adminBtn) {
-    adminBtn.classList.toggle('hidden', !(isPalAdmin() && S.mode === 'ai' || isPalAdmin() && S.mode === 'online'));
+    adminBtn.classList.toggle('hidden', !isPalAdmin());
     if (!isPalAdmin()) closeAdminMenu();
   }
   const box = $('userbox');
