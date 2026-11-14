@@ -638,6 +638,14 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .lobby-nav button.on{background:var(--panel2);color:var(--gold);border-left-color:var(--gold)}
 .lobby-main{min-width:0;max-width:720px}
 @media (max-width:760px){.lobby-grid{grid-template-columns:1fr;gap:16px}.lobby-nav{flex-direction:row;overflow-x:auto;position:static;padding:0 0 6px;border-bottom:1px solid var(--line)}.lobby-nav button{border-left:0;border-bottom:3px solid transparent;border-radius:0;white-space:nowrap;padding:10px 12px}.lobby-nav button.on{border-bottom-color:var(--gold)}}
+
+.sq-q{width:100%;box-sizing:border-box;background:var(--ink);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;resize:vertical;margin-bottom:8px}
+.sq-out{overflow:auto;max-height:300px;margin-top:8px;border:1px solid var(--line);border-radius:8px}
+.sq-out:empty{display:none}
+.sq-t{border-collapse:collapse;font-size:12px;width:100%}
+.sq-t th,.sq-t td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.sq-t th{position:sticky;top:0;background:var(--panel2);color:var(--gold)}
+.sq-code{font:12px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -1435,18 +1443,18 @@ function showAdminMenu() {
 function adminExtras(panel) {
   const box = panel.querySelector('#admin-analysis'), acts = panel.querySelector('.admin-actions');
   const mk = (id, html) => { const d = document.createElement('div'); d.className = 'adm-pane'; d.dataset.pane = id; d.innerHTML = html || ''; return d; };
-  const pA = mk('analysis'), pT = mk('tools'), pS = mk('server'), pI = mk('info'), pP = mk('players'), pL = mk('logs'), pW = mk('site'), pE = mk('powers'), pM = mk('modes');
-  adminPowers(pE); adminModes(pM);
+  const pA = mk('analysis'), pT = mk('tools'), pS = mk('server'), pI = mk('info'), pP = mk('players'), pL = mk('logs'), pW = mk('site'), pE = mk('powers'), pM = mk('modes'), pQ = mk('sql');
+  adminPowers(pE); adminModes(pM); adminSql(pQ);
   adminPlayers(pP); adminLogs(pL); adminSite(pW);
   pA.append(box, acts);
   pA.insertAdjacentHTML('afterbegin', `<div class="adm-set"><label>Think time <select id="adm-ms">${[3, 6, 12, 20].map(n => `<option value="${n * 1000}"${(S.adminMs || 6000) === n * 1000 ? ' selected' : ''}>${n}s</option>`).join('')}</select></label><label><input type="checkbox" id="adm-arrow"${S.adminHideArrow ? '' : ' checked'}> Board arrow</label></div>`);
   pT.innerHTML = `<div class="adm-grid"><button class="btn ghost sm" data-t="fen">Copy FEN</button><button class="btn ghost sm" data-t="pgn">Copy PGN</button><button class="btn ghost sm" data-t="engine">Reload engine</button><button class="btn ghost sm" data-t="stats">Clear saved stats</button></div><div class="admin-meta" id="adm-tmsg"></div>`;
   pS.innerHTML = `<div class="admin-actions"><button class="btn ghost sm" id="adm-refresh" type="button">Refresh</button></div><div class="admin-meta" id="adm-count">Not loaded.</div><ul class="adm-list" id="adm-games"></ul>`;
   const tabs = document.createElement('div'); tabs.className = 'adm-tabs';
-  tabs.innerHTML = [['analysis', 'Analysis'], ['modes', 'Game modes'], ['powers', 'Elo & Modes'], ['players', 'Players'], ['server', 'Server'], ['site', 'Site'], ['logs', 'Logs'], ['tools', 'Tools'], ['info', 'Info']].map(t => `<button type="button" data-tab="${t[0]}">${t[1]}</button>`).join('');
+  tabs.innerHTML = [['analysis', 'Analysis'], ['modes', 'Game modes'], ['powers', 'Elo & Modes'], ['players', 'Players'], ['sql', 'SQL'], ['server', 'Server'], ['site', 'Site'], ['logs', 'Logs'], ['tools', 'Tools'], ['info', 'Info']].map(t => `<button type="button" data-tab="${t[0]}">${t[1]}</button>`).join('');
   const wrap = document.createElement('div'), main = document.createElement('div');
   wrap.className = 'adm-body'; main.className = 'adm-main';
-  main.append(pA, pM, pE, pP, pS, pW, pL, pT, pI); wrap.append(tabs, main);
+  main.append(pA, pM, pE, pP, pQ, pS, pW, pL, pT, pI); wrap.append(tabs, main);
   panel.querySelector('p').after(wrap);
   const show = id => {
     panel.querySelectorAll('.adm-pane').forEach(e => e.classList.toggle('hidden', e.dataset.pane !== id));
@@ -1533,6 +1541,61 @@ function buildLobbyNav() {
 }
 buildLobbyNav();
 
+/* ═════════════ Admin: SQL editor (runs through the admin_sql database function, see admin-sql.sql) ═════════════ */
+function adminSql(pane) {
+  const SNIPS = [
+    ['Tables', "select table_name from information_schema.tables where table_schema = 'public' order by 1"],
+    ['Profile columns', "select column_name, data_type from information_schema.columns where table_name = 'profiles' order by ordinal_position"],
+    ['Top players', 'select username, rating, wins, losses, draws from profiles order by rating desc limit 20'],
+    ['Games', 'select * from games limit 20'],
+  ];
+  pane.innerHTML = `<div class="adm-set">${SNIPS.map((x, i) => `<button class="btn ghost sm" data-snip="${i}" type="button">${x[0]}</button>`).join('')}</div>
+    <textarea id="sq-q" class="sq-q" spellcheck="false" rows="6" placeholder="select * from profiles limit 10;   (Ctrl+Enter to run)"></textarea>
+    <div class="adm-set"><label><input type="checkbox" id="sq-w"> Allow changes (insert, update, delete, create…)</label></div>
+    <div class="admin-actions"><button class="btn primary sm" id="sq-run" type="button">Run</button><button class="btn ghost sm" id="sq-csv" type="button">Export CSV</button><button class="btn ghost sm" id="sq-hist" type="button">History</button></div>
+    <div class="admin-meta" id="sq-msg" style="margin-top:8px">Read-only by default. Only SELECT-type queries run unless you tick the box.</div>
+    <div class="sq-out" id="sq-out"></div>`;
+  let last = [];
+  const cell = v => v == null ? '<i class="muted">null</i>' : esc((typeof v === 'object' ? JSON.stringify(v) : String(v)).slice(0, 200));
+  const run = async () => {
+    const q = $('sq-q').value.trim(); if (!q) return;
+    const w = $('sq-w').checked;
+    if (w && !/^\s*(select|with|show|explain|values|table)\b/i.test(q) && !confirm('This will change your live database. Run it?')) return;
+    const msg = $('sq-msg'); msg.textContent = 'Running…';
+    const t0 = performance.now();
+    const {data, error} = await sb.rpc('admin_sql', {q, allow_write: w});
+    const ms = Math.round(performance.now() - t0);
+    try { const h = JSON.parse(localStorage.getItem('pal_sql_hist') || '[]').filter(x => x !== q); h.unshift(q); localStorage.setItem('pal_sql_hist', JSON.stringify(h.slice(0, 15))); } catch (e) { /* ignore */ }
+    if (error) { msg.textContent = 'Error: ' + error.message + (/admin_sql|schema cache/i.test(error.message) ? ' (run admin-sql.sql in Supabase first)' : ''); $('sq-out').innerHTML = ''; last = []; return; }
+    if (Array.isArray(data)) {
+      last = data;
+      const cols = data.length ? Object.keys(data[0]) : [];
+      msg.textContent = `${data.length} row${data.length === 1 ? '' : 's'}${data.length >= 500 ? ' (first 500)' : ''} · ${ms} ms`;
+      $('sq-out').innerHTML = cols.length ? `<table class="sq-t"><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${data.map(r => `<tr>${cols.map(c => `<td>${cell(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '';
+    } else {
+      last = [];
+      msg.textContent = `Done · ${data && data.rows_affected != null ? data.rows_affected + ' row(s) affected' : 'ok'} · ${ms} ms`;
+      $('sq-out').innerHTML = '';
+    }
+  };
+  pane.onclick = e => {
+    const sn = e.target.closest('[data-snip]');
+    if (sn) { $('sq-q').value = SNIPS[+sn.dataset.snip][1]; return; }
+    const hq = e.target.closest('[data-h]');
+    if (hq) { $('sq-q').value = hq.dataset.h; $('sq-out').innerHTML = ''; return; }
+    if (e.target.id === 'sq-run') run();
+    else if (e.target.id === 'sq-csv') {
+      if (!last.length) return toast('Run a query that returns rows first.', true);
+      const cols = Object.keys(last[0]), q = v => v == null ? '' : '"' + (typeof v === 'object' ? JSON.stringify(v) : String(v)).replace(/"/g, '""') + '"';
+      admDownload('query.csv', [cols.join(',')].concat(last.map(r => cols.map(c => q(r[c])).join(','))).join('\n'), 'text/csv');
+    } else if (e.target.id === 'sq-hist') {
+      let h = []; try { h = JSON.parse(localStorage.getItem('pal_sql_hist') || '[]'); } catch (x) { /* ignore */ }
+      $('sq-out').innerHTML = h.length ? `<ul class="adm-list">${h.map(x => `<li><code class="sq-code">${esc(x.slice(0, 120))}</code><button class="btn ghost sm" data-h="${esc(x)}">Load</button></li>`).join('')}</ul>` : '<div class="muted">No history yet.</div>';
+    }
+  };
+  pane.addEventListener('keydown', e => { if (e.target.id === 'sq-q' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); run(); } });
+}
+
 /* ═════════════ Admin: special game modes tab ═════════════ */
 function adminModes(pane) {
   const MODES = [
@@ -1584,12 +1647,13 @@ function adminPowers(pane) {
   };
   const save = async (patch) => {
     const r = cur(); if (!r) return toast('Pick a player first.', true);
-    const {data, error} = await sb.from('profiles').update(patch).eq('id', r.id).select();
-    if (error) return toast('Could not save: ' + error.message, true);
-    if (!data || !data.length) return toast('Nothing changed. The database blocked the update (see admin-powers.sql).', true);
-    Object.assign(r, data[0]);
-    if (PC[r.id]) Object.assign(PC[r.id], data[0]);
-    if (S.profile && S.profile.id === r.id) { Object.assign(S.profile, data[0]); renderMeCard(); }
+    const {data, error} = await sb.rpc('admin_set_profile', {target: r.id, patch});
+    if (error) return toast('Could not save: ' + error.message + (/function|schema cache/i.test(error.message) ? ' (run admin-powers.sql in Supabase)' : ''), true);
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return toast('Nothing changed.', true);
+    Object.assign(r, row);
+    if (PC[r.id]) Object.assign(PC[r.id], row);
+    if (S.profile && S.profile.id === r.id) { Object.assign(S.profile, row); renderMeCard(); }
     toast('Saved.'); show();
   };
   pane.refresh = async () => {
