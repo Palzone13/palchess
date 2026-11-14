@@ -686,6 +686,8 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .ach .muted{font-size:12px;margin:2px 0 8px}
 .ach-d{color:var(--gold);font-size:12px}
 .ach-p{font-size:12px}
+
+.bdg{display:inline-flex;gap:2px;margin-left:6px;font-size:13px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -1772,6 +1774,128 @@ function achRender() {
     const r = a[4](c), on = !!got[a[0]];
     return `<div class="ach${on ? ' on' : ''}"><div class="ach-i">${a[1]}</div><b>${esc(a[2])}</b><div class="muted">${esc(a[3])}</div>${on ? `<div class="ach-d">Unlocked ${esc(new Date(got[a[0]]).toLocaleDateString())}</div>` : `<div class="st-bar"><i style="width:${Math.min(100, Math.round(r[0] / r[1] * 100))}%"></i></div><div class="muted ach-p">${Math.min(r[0], r[1])} / ${r[1]}</div>`}</div>`;
   }).join('')}</div>`;
+}
+
+/* ═════════════ Social: badges next to names, rematch, and GIF export of a finished game ═════════════ */
+const BADGE_RANK = ['streak30', 'pzall', 'pzr1200', 'pzrow10', 'streak7', 'pzrow5', 'pz10', 'daily3', 'wins10', 'games25', 'streak3', 'rate200', 'pz1', 'first_win'];
+const BDG = {cache: {}, t: null};
+function badgeHtml(ach) {
+  const top = BADGE_RANK.filter(id => ach && ach[id]).slice(0, 3).map(id => ACH.find(a => a[0] === id)).filter(Boolean);
+  return top.length ? `<span class="bdg" data-bdg="1">${top.map(a => `<span title="${esc(a[2])}">${a[1]}</span>`).join('')}</span>` : '';
+}
+async function decorateBadges() {
+  const els = Array.from(document.querySelectorAll('#leaders [data-pid], #friend-list [data-pid]')).filter(e => !e.querySelector('.bdg') && !(e.nextElementSibling && e.nextElementSibling.classList.contains('bdg')));
+  if (!els.length) return;
+  const ids = Array.from(new Set(els.map(e => e.dataset.pid))).filter(id => !(id in BDG.cache));
+  if (ids.length && S.user) {
+    const {data, error} = await sb.from('user_progress').select('user_id, achievements').in('user_id', ids);
+    if (error) return;   // table missing or not shared yet
+    ids.forEach(id => { BDG.cache[id] = {}; });
+    (data || []).forEach(r => { BDG.cache[r.user_id] = r.achievements || {}; });
+  }
+  els.forEach(e => {
+    if (e.querySelector('.bdg')) return;
+    const mine = S.user && e.dataset.pid === S.user.id;
+    const h = badgeHtml(mine ? achGot() : BDG.cache[e.dataset.pid]);
+    if (h) e.insertAdjacentHTML('beforeend', h);
+  });
+}
+function watchBadges() {
+  ['leaders', 'friend-list'].forEach(id => {
+    const el = $(id); if (!el || el.dataset.bw) return; el.dataset.bw = '1';
+    new MutationObserver(() => { clearTimeout(BDG.t); BDG.t = setTimeout(decorateBadges, 150); }).observe(el, {childList: true});
+  });
+}
+watchBadges();
+
+function rematch() {
+  if (S.mode === 'online' && S.online && !S.online.watch) {
+    const row = S.online.row, opp = S.color === 'w' ? row.black_id : row.white_id;
+    if (!opp) return toast('Your opponent is not an account, so start a new game instead.', true);
+    return createGame(S.color === 'w' ? 'b' : 'w', row.time_control || 0, opp);
+  }
+  newGame();
+}
+
+// Animated GIF of the whole game: every position drawn on a canvas, quantised to 256 colours, LZW-encoded in the browser
+function gifLzw(idx) {
+  let size = 9, next = 258, dict = new Map(), bits = 0, nb = 0; const out = [];
+  const emit = c => { bits |= c << nb; nb += size; while (nb >= 8) { out.push(bits & 255); bits >>>= 8; nb -= 8; } if (next > (1 << size) - 1 && size < 12) size++; };
+  emit(256); let pre = idx[0];
+  for (let i = 1; i < idx.length; i++) {
+    const c = idx[i], key = pre * 256 + c, v = dict.get(key);
+    if (v !== undefined) { pre = v; continue; }
+    emit(pre);
+    if (next < 4096) dict.set(key, next++);
+    else { emit(256); dict = new Map(); size = 9; next = 258; }
+    pre = c;
+  }
+  emit(pre); emit(257); if (nb > 0) out.push(bits & 255);
+  return out;
+}
+function gifBuild(frames, W, H, delays) {
+  const cnt = new Int32Array(4096), sr = new Float64Array(4096), sg = new Float64Array(4096), sb2 = new Float64Array(4096);
+  const bin = (r, g, b) => ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+  frames.forEach(f => { for (let i = 0; i < f.length; i += 4) { const k = bin(f[i], f[i + 1], f[i + 2]); cnt[k]++; sr[k] += f[i]; sg[k] += f[i + 1]; sb2[k] += f[i + 2]; } });
+  const used = []; for (let k = 0; k < 4096; k++) if (cnt[k]) used.push(k);
+  used.sort((a, b) => cnt[b] - cnt[a]);
+  const pal = used.slice(0, 256), col = k => [sr[k] / cnt[k], sg[k] / cnt[k], sb2[k] / cnt[k]];
+  const map = new Uint8Array(4096), pc = pal.map(col);
+  used.forEach(k => {
+    const c = col(k); let best = 0, bd = 1e12;
+    pc.forEach((q, j) => { const d = (q[0] - c[0]) ** 2 + (q[1] - c[1]) ** 2 + (q[2] - c[2]) ** 2; if (d < bd) { bd = d; best = j; } });
+    map[k] = best;
+  });
+  const b = [];
+  const w16 = n => b.push(n & 255, n >> 8);
+  'GIF89a'.split('').forEach(c => b.push(c.charCodeAt(0)));
+  w16(W); w16(H); b.push(0xF7, 0, 0);
+  for (let i = 0; i < 256; i++) { const q = pc[i] || [0, 0, 0]; b.push(Math.round(q[0]), Math.round(q[1]), Math.round(q[2])); }
+  b.push(0x21, 0xFF, 11); 'NETSCAPE2.0'.split('').forEach(c => b.push(c.charCodeAt(0))); b.push(3, 1, 0, 0, 0);
+  frames.forEach((f, n) => {
+    const idx = new Uint8Array(W * H);
+    for (let i = 0, j = 0; i < f.length; i += 4, j++) idx[j] = map[bin(f[i], f[i + 1], f[i + 2])];
+    b.push(0x21, 0xF9, 4, 0, delays[n] & 255, delays[n] >> 8, 0, 0, 0x2C); w16(0); w16(0); w16(W); w16(H); b.push(0, 8);
+    const z = gifLzw(idx);
+    for (let i = 0; i < z.length; i += 255) { const part = z.slice(i, i + 255); b.push(part.length); part.forEach(v => b.push(v)); }
+    b.push(0);
+  });
+  b.push(0x3B);
+  return new Uint8Array(b);
+}
+async function makeGif() {
+  if (!S.game || S.gifBusy) return;
+  const hist = S.game.history({verbose: true}); if (!hist.length) return;
+  S.gifBusy = true; toast('Making your GIF…');
+  try {
+    const SQ = 44, W = SQ * 8, H = SQ * 8, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d', {willReadFrequently: true});
+    const lite = $('board') && $('board').querySelector('.sq.light'), dark = $('board') && $('board').querySelector('.sq.dark');
+    const bg = (el, d) => { const c = el ? getComputedStyle(el).backgroundColor : ''; return c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c) ? c : d; };
+    const cL = bg(lite, '#e8dcc0'), cD = bg(dark, '#5f4a36');
+    const ep = effPieces(), set = PIECE_SETS[ep] ? ep : null, imgs = {};
+    if (set) await Promise.all(['k', 'q', 'r', 'b', 'n', 'p'].flatMap(t => ['w', 'b'].map(c => new Promise(res => { const im = new Image(); im.onload = im.onerror = res; im.src = pieceUri(set, c + t); imgs[c + t] = im; }))));
+    const g = new Chess(), frames = [], delays = [];
+    const draw = last => {
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        const f = S.flip ? 7 - c : c, rk = S.flip ? r : 7 - r, sq = FILES[f] + (rk + 1);
+        ctx.fillStyle = (f + rk) % 2 === 0 ? cD : cL; ctx.fillRect(c * SQ, r * SQ, SQ, SQ);
+        if (last && (last.from === sq || last.to === sq)) { ctx.fillStyle = 'rgba(255,214,60,.5)'; ctx.fillRect(c * SQ, r * SQ, SQ, SQ); }
+        const pc = g.get(sq); if (!pc) continue;
+        if (set) ctx.drawImage(imgs[pc.color + pc.type], c * SQ, r * SQ, SQ, SQ);
+        else { ctx.fillStyle = pc.color === 'w' ? '#fff' : '#111'; ctx.strokeStyle = pc.color === 'w' ? '#111' : '#fff'; ctx.font = (SQ * 0.8) + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 1.5; ctx.strokeText(GLYPH[pc.type], c * SQ + SQ / 2, r * SQ + SQ / 2 + 2); ctx.fillText(GLYPH[pc.type], c * SQ + SQ / 2, r * SQ + SQ / 2 + 2); }
+      }
+      frames.push(ctx.getImageData(0, 0, W, H).data);
+    };
+    draw(null); delays.push(100);
+    for (const m of hist) { g.move({from: m.from, to: m.to, promotion: m.promotion}); draw(m); delays.push(70); await new Promise(r => setTimeout(r, 0)); }
+    delays[delays.length - 1] = 300;
+    const bytes = gifBuild(frames, W, H, delays);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], {type: 'image/gif'})); a.download = 'pal-chess-game.gif';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast('GIF saved (' + Math.round(bytes.length / 1024) + ' KB).');
+  } catch (e) { console.error('GIF failed: ' + (e && e.message)); toast('Could not make the GIF.', true); }
+  S.gifBusy = false;
 }
 
 /* ═════════════ Lobby: side bar with tabs (Play, Game modes, Profile, Friends, Leaderboard) ═════════════ */
@@ -5622,13 +5746,16 @@ function renderSide(vg) {
     add(r.timer ? 'Pause' : 'Auto-play', toggleAuto);
     add('Flip board', () => { S.flip = !S.flip; render(); });
   if (total) add('Save game link', saveChessGame);
+    if (total) add('Make GIF', makeGif);
     add('Exit overview', () => { endReview(); render(); }, 'primary');
     return;
   }
   add('Flip board', () => { S.flip = !S.flip; render(); });
   if (total) add('Save game link', saveChessGame);
+  if (S.over && total) add('Make GIF', makeGif);
   if (S.premove) add('Cancel premove', cancelPremove, 'danger');
   if (S.over && total) add('Overview', startReview, 'primary');
+  if (S.over && (S.mode === 'ai' || S.mode === 'local' || (S.mode === 'online' && S.online && !S.online.watch))) add('Rematch', rematch, 'primary');
   if (S.mode === 'ai' || S.mode === 'local') {
     const u = add('Undo', undo);
     u.disabled = !total || S.aiThinking || S.tc > 0;
