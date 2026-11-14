@@ -608,6 +608,16 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .g-line{fill:none;stroke:var(--gold);stroke-width:1.6;vector-effect:non-scaling-stroke}
 .g-cur{stroke:var(--text);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.7}
 .st-moments{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+
+.adm-tabs{display:flex;gap:4px;margin:10px 0;border-bottom:1px solid var(--line)}
+.adm-tabs button{background:none;border:0;color:var(--muted);padding:6px 10px;font:600 13px var(--f-body);cursor:pointer;border-bottom:2px solid transparent}
+.adm-tabs button.on{color:var(--gold);border-bottom-color:var(--gold)}
+.adm-set{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}
+.adm-set select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:2px 4px}
+.adm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.adm-list{list-style:none;margin:8px 0 0;padding:0;max-height:240px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.adm-list li{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border-radius:8px;padding:8px 10px;font-size:13px}
+.adm-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
 </style>
 </head>
 <body>
@@ -1346,7 +1356,7 @@ const adminArrowAllowed = () => (S.mode === 'ai' || S.mode === 'online') && !S.b
 function drawAdminArrow() {
   let svg = $('admin-arrow');
   const m = S.adminSuggestion;
-  if (!m || !S.adminOpen || !adminArrowAllowed() || m.fen !== S.game.fen()) { if (svg) svg.remove(); return; }
+  if (!m || !S.adminOpen || S.adminHideArrow || !adminArrowAllowed() || m.fen !== S.game.fen()) { if (svg) svg.remove(); return; }
   const b = $('board'), wrap = b.parentElement;
   if (!svg) {
     svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1372,6 +1382,7 @@ function showAdminMenu() {
   panel.setAttribute('role','dialog'); panel.setAttribute('aria-label','PAL Admin');
   panel.innerHTML = `<h3>PAL Admin</h3><p class="muted small">Match analysis tools for the PAL account.</p><div id="admin-analysis"><div class="admin-meta">Press the button to calculate PAL's next move.</div></div><div class="admin-actions"><button class="btn primary" id="admin-best" type="button">Next move</button><button class="btn ghost" id="admin-close" type="button">Close</button></div>`;
   document.body.appendChild(panel);
+  adminExtras(panel);
   S.adminOpen = true;
   $('btn-admin').setAttribute('aria-expanded','true');
   $('admin-close').onclick = closeAdminMenu;
@@ -1398,6 +1409,72 @@ function showAdminMenu() {
     $('admin-analysis').innerHTML = `<div class="admin-meta">PAL should play</div><div class="admin-move">${esc(m.san)}</div><div class="admin-meta">${esc(m.from.toUpperCase())} → ${esc(m.to.toUpperCase())}${m.promotion ? ' · promote to '+esc(m.promotion.toUpperCase()) : ''}</div><div class="admin-meta">${esc(m.engine)}${m.info && m.info.depth ? ' · depth ' + m.info.depth : ''}${ev ? ' · eval ' + esc(ev) : ''}</div>${arrow ? '<div class="admin-meta">The arrow on the board shows the move.</div>' : ''}`;
   };
   if (!SF.worker) loadStockfish().catch(() => {});      // warm the engine up when the panel opens
+}
+
+
+/* ═════════════ Admin extras: tabs, engine settings, tools, server view, diagnostics ═════════════ */
+function adminExtras(panel) {
+  const box = panel.querySelector('#admin-analysis'), acts = panel.querySelector('.admin-actions');
+  const mk = (id, html) => { const d = document.createElement('div'); d.className = 'adm-pane'; d.dataset.pane = id; d.innerHTML = html || ''; return d; };
+  const pA = mk('analysis'), pT = mk('tools'), pS = mk('server'), pI = mk('info');
+  pA.append(box, acts);
+  pA.insertAdjacentHTML('afterbegin', `<div class="adm-set"><label>Think time <select id="adm-ms">${[3, 6, 12, 20].map(n => `<option value="${n * 1000}"${(S.adminMs || 6000) === n * 1000 ? ' selected' : ''}>${n}s</option>`).join('')}</select></label><label><input type="checkbox" id="adm-arrow"${S.adminHideArrow ? '' : ' checked'}> Board arrow</label></div>`);
+  pT.innerHTML = `<div class="adm-grid"><button class="btn ghost sm" data-t="fen">Copy FEN</button><button class="btn ghost sm" data-t="pgn">Copy PGN</button><button class="btn ghost sm" data-t="engine">Reload engine</button><button class="btn ghost sm" data-t="stats">Clear saved stats</button></div><div class="admin-meta" id="adm-tmsg"></div>`;
+  pS.innerHTML = `<div class="admin-actions"><button class="btn ghost sm" id="adm-refresh" type="button">Refresh</button></div><div class="admin-meta" id="adm-count">Not loaded.</div><ul class="adm-list" id="adm-games"></ul>`;
+  const tabs = document.createElement('div'); tabs.className = 'adm-tabs';
+  tabs.innerHTML = [['analysis', 'Analysis'], ['tools', 'Tools'], ['server', 'Server'], ['info', 'Info']].map(t => `<button type="button" data-tab="${t[0]}">${t[1]}</button>`).join('');
+  panel.querySelector('p').after(tabs);
+  tabs.after(pA, pT, pS, pI);
+  const show = id => {
+    panel.querySelectorAll('.adm-pane').forEach(e => e.classList.toggle('hidden', e.dataset.pane !== id));
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+    if (id === 'info') pI.innerHTML = adminInfoHtml();
+    if (id === 'server' && !S.adminLoaded) loadAdminGames();
+  };
+  tabs.onclick = e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); };
+  show('analysis');
+  panel.querySelector('#adm-ms').onchange = e => { S.adminMs = +e.target.value; };
+  panel.querySelector('#adm-arrow').onchange = e => { S.adminHideArrow = !e.target.checked; drawAdminArrow(); };
+  const say = (m, bad) => { const el = $('adm-tmsg'); if (el) el.textContent = m; toast(m, bad); };
+  const copy = (txt, what) => { if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => say(what + ' copied.'), () => say('Copy failed.', true)); else say('Clipboard unavailable.', true); };
+  pT.onclick = e => {
+    const b = e.target.closest('[data-t]'); if (!b) return;
+    const t = b.dataset.t;
+    if (t === 'fen' || t === 'pgn') { if (!S.game) return say('No game to copy.', true); let v = ''; try { v = t === 'fen' ? S.game.fen() : S.game.pgn(); } catch (x) { /* ignore */ } copy(v, t.toUpperCase()); }
+    else if (t === 'engine') { try { if (SF.worker) SF.worker.terminate(); } catch (x) { /* ignore */ } SF.worker = null; SF.loading = null; SF.busy = false; SF.failedAt = 0; loadStockfish().then(() => say('Engine reloaded.'), () => say('Engine failed to load.', true)); say('Reloading engine…'); }
+    else if (t === 'stats') { if (confirm('Clear saved accuracy stats on this device?')) { try { localStorage.removeItem('pal_stats'); } catch (x) { /* ignore */ } say('Saved stats cleared.'); } }
+  };
+  $('adm-refresh').onclick = loadAdminGames;
+  $('adm-games').onclick = async e => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    if (!confirm('Delete this game from the server? Players in it will lose it.')) return;
+    const {error} = await sb.from('games').delete().eq('id', b.dataset.del);
+    if (error) return toast('Could not delete: ' + error.message, true);
+    toast('Game deleted.'); loadAdminGames();
+  };
+}
+async function loadAdminGames() {
+  const cnt = $('adm-count'), ul = $('adm-games'); if (!cnt || !ul) return;
+  cnt.textContent = 'Loading…';
+  const [g, u] = await Promise.all([
+    sb.from('games').select('*').limit(25),
+    sb.from('profiles').select('id', {count: 'exact', head: true}),
+  ]);
+  if (!$('adm-count')) return;
+  S.adminLoaded = true;
+  if (g.error) { cnt.textContent = 'Could not load games: ' + g.error.message; ul.innerHTML = ''; return; }
+  const rows = g.data || [];
+  cnt.textContent = `${rows.length} game${rows.length === 1 ? '' : 's'} on the server${u && u.count != null ? ' · ' + u.count + ' players' : ''}.`;
+  ul.innerHTML = rows.map(r => `<li><span><b>${esc(r.code || String(r.id).slice(0, 6))}</b> · ${esc(r.status || '?')}<br><span class="muted">${esc(r.white_id ? nameOf(r.white_id) : '—')} vs ${esc(r.black_id ? nameOf(r.black_id) : '—')}</span></span><button class="btn ghost sm" data-del="${esc(String(r.id))}">Delete</button></li>`).join('') || '<li class="muted">No games stored.</li>';
+}
+function adminInfoHtml() {
+  const row = (k, v) => `<div class="adm-row"><span class="muted">${k}</span><span>${esc(String(v))}</span></div>`;
+  const g = S.game, life = loadLife();
+  return row('Account', S.profile ? S.profile.username : '—') + row('Mode', S.mode || '—') + row('Playing as', S.color || '—')
+    + row('Engine', SF.worker ? 'Stockfish loaded' : SF.loading ? 'Stockfish loading' : SF.failedAt ? 'Stockfish unavailable' : 'Not loaded yet')
+    + row('Position', g ? g.fen().split(' ').slice(0, 2).join(' ') : '—') + row('Moves played', g ? g.history().length : 0)
+    + row('Online game', S.online && S.online.row ? S.online.row.status + ' · ' + (S.online.row.code || String(S.online.row.id).slice(0, 6)) : '—')
+    + row('Saved accuracy games', life.length) + row('Coach', COACH.on ? 'on' : 'off') + row('Think time', ((S.adminMs || 6000) / 1000) + 's');
 }
 
 function renderUserBox() {
