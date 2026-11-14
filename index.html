@@ -656,9 +656,9 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 #view-game[data-board="medieval"] .sq.dark .co,#view-kfc[data-board="medieval"] .sq.dark .co{color:#d8c8a4}
 #view-game[data-board="medieval"] .sq.light .co,#view-kfc[data-board="medieval"] .sq.light .co{color:#5f4a36}
 .pz-layout{display:flex;gap:22px;align-items:flex-start}
-.pz-host{flex:0 0 auto;width:min(480px,calc(100vh - 150px));min-width:240px;margin:8px 0}
+.pz-host,#pz-host.pz-host{--bs:max(240px,min(480px,calc(100vh - 150px)));width:var(--bs);flex:0 0 auto;margin:8px 0}
 .pz-side{flex:1;min-width:170px;padding-top:8px;position:sticky;top:84px}
-@media (max-width:640px){.pz-layout{flex-direction:column;gap:6px}.pz-host{width:min(100%,calc(100vh - 330px))}.pz-side{position:static;padding-top:0;width:100%}}
+@media (max-width:640px){.pz-layout{flex-direction:column;gap:6px}.pz-host,#pz-host.pz-host{--bs:max(240px,min(calc(100vw - 32px),calc(100vh - 330px)))}.pz-side{position:static;padding-top:0;width:100%}}
 .pz-meta{font-size:14px;margin:2px 0 6px}
 .pz-msg{min-height:22px;margin:8px 0;font-weight:600}
 .pz-msg.good{color:#59c38e}.pz-msg.bad{color:#e0615a}
@@ -1561,11 +1561,11 @@ function pzRoot() {
   return d;
 }
 function pzStyles() {   // give the puzzle board the same look as the game board (themes, textures, pieces)
-  if (PZ.ready) return; PZ.ready = true;
+  if (PZ.style) PZ.style.remove();
   let css = '';
-  const walk = rules => { for (const r of rules) { const t = r.cssText || ''; if (t.includes('#view-game') && !r.selectorText?.includes?.('#view-game4')) css += t.replace(/#view-game\b/g, '#pz-host') + '\n'; } };
+  const walk = rules => { for (const r of rules) { const t = r.cssText || ''; if (t.includes('#view-game') && !r.selectorText?.includes?.('#view-game4')) css += t.replace(/#view-game\b/g, '#pz-host').replace(/#board(?![\w-])/g, '#pz-board') + '\n'; } };
   for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch (e) { /* cross-origin sheet */ } }
-  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st); PZ.style = st;
 }
 function pzSyncLook() {
   const from = $('view-game'), to = $('pz-host'); if (!from || !to) return;
