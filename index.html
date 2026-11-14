@@ -630,14 +630,16 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 @media (max-width:560px){.adm-body{flex-direction:column}.adm-body>.adm-tabs{flex:none;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:0 0 6px;position:static}.adm-body>.adm-tabs button{width:auto;border-left:0;border-bottom:2px solid transparent;border-radius:0}.adm-body>.adm-tabs button.on{border-bottom-color:var(--gold)}}
 
 /* Lobby side bar */
-.lobby{max-width:1180px}
-.lobby-grid{grid-template-columns:200px minmax(0,1fr);gap:36px;align-items:start}
+.lobby{max-width:none;padding-left:20px;padding-right:24px}
+.lobby-grid{grid-template-columns:190px minmax(0,1fr) 340px;gap:32px;align-items:start}
+.lobby-board{position:sticky;top:84px;max-height:calc(100vh - 100px);overflow:auto}
 .lobby-nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:84px;padding-top:6px}
 .lobby-nav button{background:none;border:0;border-left:3px solid transparent;color:var(--muted);text-align:left;padding:12px 14px;border-radius:0 8px 8px 0;font:700 15px var(--f-body);cursor:pointer}
 .lobby-nav button:hover{background:var(--panel2);color:var(--text)}
 .lobby-nav button.on{background:var(--panel2);color:var(--gold);border-left-color:var(--gold)}
-.lobby-main{min-width:0;max-width:720px}
-@media (max-width:760px){.lobby-grid{grid-template-columns:1fr;gap:16px}.lobby-nav{flex-direction:row;overflow-x:auto;position:static;padding:0 0 6px;border-bottom:1px solid var(--line)}.lobby-nav button{border-left:0;border-bottom:3px solid transparent;border-radius:0;white-space:nowrap;padding:10px 12px}.lobby-nav button.on{border-bottom-color:var(--gold)}}
+.lobby-main{min-width:0;max-width:720px;width:100%;margin:0 auto}
+@media (max-width:1100px){.lobby-grid{grid-template-columns:190px minmax(0,1fr)}.lobby-board{grid-column:2;position:static;max-height:none}}
+@media (max-width:760px){.lobby-grid{grid-template-columns:1fr;gap:16px}.lobby-board{grid-column:auto}.lobby-nav{flex-direction:row;overflow-x:auto;position:static;padding:0 0 6px;border-bottom:1px solid var(--line)}.lobby-nav button{border-left:0;border-bottom:3px solid transparent;border-radius:0;white-space:nowrap;padding:10px 12px}.lobby-nav button.on{border-bottom-color:var(--gold)}}
 
 .sq-q{width:100%;box-sizing:border-box;background:var(--ink);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;resize:vertical;margin-bottom:8px}
 .sq-out{overflow:auto;max-height:300px;margin-top:8px;border:1px solid var(--line);border-radius:8px}
@@ -1510,7 +1512,7 @@ function adminInfoHtml() {
 }
 
 /* ═════════════ Lobby: side bar with tabs (Play, Game modes, Profile, Friends, Leaderboard) ═════════════ */
-const LOBBY_TABS = [['play', 'Play'], ['modes', 'Game modes'], ['profile', 'Profile'], ['friends', 'Friends'], ['board', 'Leaderboard']];
+const LOBBY_TABS = [['play', 'Play'], ['modes', 'Game modes'], ['profile', 'Profile'], ['friends', 'Friends']];
 function lobbyTab(id) {
   document.querySelectorAll('#view-lobby .lpane').forEach(p => p.classList.toggle('hidden', p.dataset.lp !== id));
   document.querySelectorAll('#view-lobby .lobby-nav button').forEach(b => { b.classList.toggle('on', b.dataset.lp === id); b.setAttribute('aria-selected', b.dataset.lp === id ? 'true' : 'false'); });
@@ -1529,13 +1531,14 @@ function buildLobbyNav() {
     pane('modes', [hModes, g('acc-four'), g('acc-kfc'), g('acc-watch'), g('open-setup'), g('open-saved')]),
     pane('profile', [g('me-card')]),
     pane('friends', [g('friends-block')]),
-    pane('board', [hBoard, g('seg-lb'), g('leaders')]),
     g('ad-lobby')
   );
+  const board = document.createElement('aside'); board.className = 'lobby-board';
+  [hBoard, g('seg-lb'), g('leaders')].forEach(n => n && board.appendChild(n));
   const nav = document.createElement('nav'); nav.className = 'lobby-nav'; nav.setAttribute('aria-label', 'Lobby sections');
   nav.innerHTML = LOBBY_TABS.map(t => `<button type="button" data-lp="${t[0]}">${t[1]}</button>`).join('');
   nav.onclick = e => { const b = e.target.closest('[data-lp]'); if (b) lobbyTab(b.dataset.lp); };
-  grid.replaceChildren(nav, main); grid.dataset.nav = '1';
+  grid.replaceChildren(nav, main, board); grid.dataset.nav = '1';
   let first = 'play'; try { first = sessionStorage.getItem('pal_lobbytab') || 'play'; } catch (e) { /* ignore */ }
   lobbyTab(LOBBY_TABS.some(t => t[0] === first) ? first : 'play');
 }
