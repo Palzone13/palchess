@@ -628,6 +628,16 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .adm-body>.adm-tabs button{text-align:left;border-bottom:0;border-left:2px solid transparent;padding:8px 10px;border-radius:0 6px 6px 0;width:100%}
 .adm-body>.adm-tabs button.on{border-left-color:var(--gold);background:var(--panel2)}
 @media (max-width:560px){.adm-body{flex-direction:column}.adm-body>.adm-tabs{flex:none;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:0 0 6px;position:static}.adm-body>.adm-tabs button{width:auto;border-left:0;border-bottom:2px solid transparent;border-radius:0}.adm-body>.adm-tabs button.on{border-bottom-color:var(--gold)}}
+
+/* Lobby side bar */
+.lobby{max-width:1180px}
+.lobby-grid{grid-template-columns:200px minmax(0,1fr);gap:36px;align-items:start}
+.lobby-nav{display:flex;flex-direction:column;gap:4px;position:sticky;top:84px;padding-top:6px}
+.lobby-nav button{background:none;border:0;border-left:3px solid transparent;color:var(--muted);text-align:left;padding:12px 14px;border-radius:0 8px 8px 0;font:700 15px var(--f-body);cursor:pointer}
+.lobby-nav button:hover{background:var(--panel2);color:var(--text)}
+.lobby-nav button.on{background:var(--panel2);color:var(--gold);border-left-color:var(--gold)}
+.lobby-main{min-width:0;max-width:720px}
+@media (max-width:760px){.lobby-grid{grid-template-columns:1fr;gap:16px}.lobby-nav{flex-direction:row;overflow-x:auto;position:static;padding:0 0 6px;border-bottom:1px solid var(--line)}.lobby-nav button{border-left:0;border-bottom:3px solid transparent;border-radius:0;white-space:nowrap;padding:10px 12px}.lobby-nav button.on{border-bottom-color:var(--gold)}}
 </style>
 </head>
 <body>
@@ -1491,6 +1501,38 @@ function adminInfoHtml() {
     + row('Saved accuracy games', life.length) + row('Coach', COACH.on ? 'on' : 'off') + row('Think time', ((S.adminMs || 6000) / 1000) + 's');
 }
 
+/* ═════════════ Lobby: side bar with tabs (Play, Game modes, Profile, Friends, Leaderboard) ═════════════ */
+const LOBBY_TABS = [['play', 'Play'], ['modes', 'Game modes'], ['profile', 'Profile'], ['friends', 'Friends'], ['board', 'Leaderboard']];
+function lobbyTab(id) {
+  document.querySelectorAll('#view-lobby .lpane').forEach(p => p.classList.toggle('hidden', p.dataset.lp !== id));
+  document.querySelectorAll('#view-lobby .lobby-nav button').forEach(b => { b.classList.toggle('on', b.dataset.lp === id); b.setAttribute('aria-selected', b.dataset.lp === id ? 'true' : 'false'); });
+  try { sessionStorage.setItem('pal_lobbytab', id); } catch (e) { /* ignore */ }
+}
+function buildLobbyNav() {
+  const grid = document.querySelector('#view-lobby .lobby-grid');
+  if (!grid || grid.dataset.nav || grid.children.length < 2) return;
+  const g = id => document.getElementById(id), left = grid.children[0], right = grid.children[1];
+  const hPlay = left.querySelector('h2'), hBoard = right.querySelector('h2');
+  const hModes = hPlay.cloneNode(false); hModes.textContent = 'Game modes';
+  const pane = (id, nodes) => { const d = document.createElement('div'); d.className = 'lpane hidden'; d.dataset.lp = id; nodes.forEach(n => n && d.appendChild(n)); return d; };
+  const main = document.createElement('div'); main.className = 'lobby-main';
+  main.append(
+    pane('play', [hPlay, g('acc-single'), g('acc-multi')]),
+    pane('modes', [hModes, g('acc-four'), g('acc-kfc'), g('acc-watch'), g('open-setup'), g('open-saved')]),
+    pane('profile', [g('me-card')]),
+    pane('friends', [g('friends-block')]),
+    pane('board', [hBoard, g('seg-lb'), g('leaders')]),
+    g('ad-lobby')
+  );
+  const nav = document.createElement('nav'); nav.className = 'lobby-nav'; nav.setAttribute('aria-label', 'Lobby sections');
+  nav.innerHTML = LOBBY_TABS.map(t => `<button type="button" data-lp="${t[0]}">${t[1]}</button>`).join('');
+  nav.onclick = e => { const b = e.target.closest('[data-lp]'); if (b) lobbyTab(b.dataset.lp); };
+  grid.replaceChildren(nav, main); grid.dataset.nav = '1';
+  let first = 'play'; try { first = sessionStorage.getItem('pal_lobbytab') || 'play'; } catch (e) { /* ignore */ }
+  lobbyTab(LOBBY_TABS.some(t => t[0] === first) ? first : 'play');
+}
+buildLobbyNav();
+
 /* ═════════════ Admin: special game modes tab ═════════════ */
 function adminModes(pane) {
   const MODES = [
@@ -1507,7 +1549,7 @@ function adminModes(pane) {
   pane.onclick = e => {
     const b = e.target.closest('[data-open]'); if (!b) return;
     const el = $(b.dataset.open); if (!el) return toast('That mode is not available.', true);
-    showView('lobby');
+    showView('lobby'); lobbyTab('modes');
     setTimeout(() => {
       el.classList.remove('hidden');
       if (el.classList.contains('acc-link')) el.click();
