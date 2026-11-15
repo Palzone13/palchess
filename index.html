@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12202b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>PAL Chess</title>
 <meta name="color-scheme" content="dark">
 <!-- Google AdSense: replace with your own publisher id once your account is approved (Settings > Account in AdSense). -->
@@ -692,6 +695,53 @@ html[data-bg="custom"] .auth-hero h1{text-shadow:0 1px 8px rgba(0,0,0,.35)}
 .evfloat{position:fixed;transform:translate(-50%,0);z-index:90;pointer-events:none;font:800 34px var(--f-head);text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 14px rgba(0,0,0,.6);animation:evrise 1.6s ease-out forwards}
 .evfloat.pos{color:#ffd54a}.evfloat.neg{color:#ff5a4e}.evfloat.zero{color:#fff}
 @keyframes evrise{0%{opacity:0;transform:translate(-50%,12px) scale(.6)}15%{opacity:1;transform:translate(-50%,0) scale(1.3)}30%{transform:translate(-50%,-6px) scale(1)}100%{opacity:0;transform:translate(-50%,-72px) scale(1)}}
+
+/* ═════════════ Mobile UI ═════════════ */
+html{-webkit-text-size-adjust:100%}
+button,.btn,.acc-h,.lobby-nav button,.board{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.ti{display:none;font-style:normal}
+@media (max-width:760px){
+  .top{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));padding-top:max(8px,env(safe-area-inset-top))}
+  input,select,textarea{font-size:16px !important}
+  .btn,.acc-h,.acc-link{min-height:44px}
+  .lobby{padding:14px 12px calc(96px + env(safe-area-inset-bottom))}
+  /* lobby tabs become a bottom tab bar */
+  .lobby-nav{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;display:flex;flex-direction:row;justify-content:space-around;gap:0;overflow:visible;
+    background:var(--panel);border-top:1px solid var(--line);padding:4px 2px calc(4px + env(safe-area-inset-bottom));box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+  .lobby-nav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border:0;border-top:3px solid transparent;border-radius:0;
+    font:700 10.5px var(--f-body);white-space:nowrap;background:none}
+  .lobby-nav button span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .lobby-nav button .ti{display:block;font-size:20px;line-height:1}
+  .lobby-nav button.on{background:none;border-top-color:var(--gold);border-left:0;border-bottom:0}
+  .lobby-main{max-width:none}
+  .lobby-board{margin-top:8px}
+  /* game and puzzle screens */
+  .game{padding:10px 8px calc(28px + env(safe-area-inset-bottom))}
+  .controls{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .controls .btn{width:100%}
+  .moves{height:200px}
+  .pz-side{padding:12px}
+  .pz-btns .btn{flex:1 1 45%}
+  .pz-stat{font-size:12px}
+  .evfloat{font-size:26px}
+  .ach-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .ach{padding:10px}
+  .st-cols{gap:8px}
+  .board{border-radius:8px}
+  /* admin menu becomes a full-width sheet */
+  .admin-panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:86vh;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));z-index:80}
+  .adm-grid{grid-template-columns:1fr 1fr}
+  .sq-out{max-height:220px}
+  .npanel,.alerts{left:8px;right:8px;width:auto}
+  .modal{max-height:92vh;overflow:auto}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom)) !important}
+}
+@media (max-width:760px) and (orientation:landscape){
+  .lobby-nav button span{display:none}
+  .lobby-nav button .ti{font-size:22px}
+  .controls{grid-template-columns:repeat(4,1fr)}
+}
+@media (hover:none){.board .sq:hover{filter:none}.btn:hover{filter:none}}
 </style>
 </head>
 <body>
@@ -1904,7 +1954,7 @@ async function makeGif() {
 }
 
 /* ═════════════ Lobby: side bar with tabs (Play, Game modes, Profile, Friends, Leaderboard) ═════════════ */
-const LOBBY_TABS = [['play', 'Play'], ['modes', 'Game modes'], ['puzzles', 'Puzzles'], ['badges', 'Badges'], ['profile', 'Profile'], ['friends', 'Friends']];
+const LOBBY_TABS = [['play', 'Play', '♟️'], ['modes', 'Game modes', '🎮'], ['puzzles', 'Puzzles', '🧩'], ['badges', 'Badges', '🏅'], ['profile', 'Profile', '👤'], ['friends', 'Friends', '👥']];
 function lobbyTab(id) {
   document.querySelectorAll('#view-lobby .lpane').forEach(p => p.classList.toggle('hidden', p.dataset.lp !== id));
   document.querySelectorAll('#view-lobby .lobby-nav button').forEach(b => { b.classList.toggle('on', b.dataset.lp === id); b.setAttribute('aria-selected', b.dataset.lp === id ? 'true' : 'false'); });
@@ -1933,7 +1983,7 @@ function buildLobbyNav() {
   const board = document.createElement('aside'); board.className = 'lobby-board';
   [hBoard, g('seg-lb'), g('leaders')].forEach(n => n && board.appendChild(n));
   const nav = document.createElement('nav'); nav.className = 'lobby-nav'; nav.setAttribute('aria-label', 'Lobby sections');
-  nav.innerHTML = LOBBY_TABS.map(t => `<button type="button" data-lp="${t[0]}">${t[1]}</button>`).join('');
+  nav.innerHTML = LOBBY_TABS.map(t => `<button type="button" data-lp="${t[0]}"><i class="ti" aria-hidden="true">${t[2]}</i><span>${t[1]}</span></button>`).join('');
   nav.onclick = e => { const b = e.target.closest('[data-lp]'); if (b) lobbyTab(b.dataset.lp); };
   grid.replaceChildren(nav, main, board); grid.dataset.nav = '1';
   let first = 'play'; try { first = sessionStorage.getItem('pal_lobbytab') || 'play'; } catch (e) { /* ignore */ }
