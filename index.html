@@ -2604,6 +2604,15 @@ async function openOnline(row) {
 
 async function pollOnline() {
   if (!S.online || S.online.busy) return;
+  if (S.online.row.bot) {                                          // a bot game being watched
+    try {
+      const {data} = await sb.rpc('get_bot_match', {gid: S.online.row.id});
+      const r = Array.isArray(data) ? data[0] : data;
+      if (r) applyRow(botRowFrom(r));
+      else if (!S.over) { S.over = {result: S.online.row.result || '*', reason: 'ended'}; clearInterval(S.online.poll); render(); }
+    } catch (e) { /* try again on the next poll */ }
+    return;
+  }
   const {data} = await sb.from('games').select('*').eq('id', S.online.row.id).maybeSingle();
   if (data) applyRow(data);
   else if (S.online && S.online.watch && !S.over) {              // the finished game was removed from the server
@@ -2701,6 +2710,36 @@ async function deleteBotMatch(id) {
     const r = await sb.rpc('delete_bot_match', {gid: id});
     if (r.error) await sb.from('games').delete().eq('id', id);   // fallback if the function is not installed
   } catch (e) { console.warn('Could not delete bot game', e); }
+}
+// Bot matches live in the bot_matches table and are played in this browser. After every move we send the move list and
+// clocks to the server (sync_bot_match) so that other people can find the game under "Watch live" and follow it.
+let botSyncChain = Promise.resolve(), botSyncWarned = false;
+function syncBotRow() {
+  if (!S.botMatchId || !S.game || !sb) return Promise.resolve();
+  const id = S.botMatchId, moves = S.game.history(), col = S.color, name = S.botName;
+  const wms = S.tc ? Math.round(clockMs('w')) : null, bms = S.tc ? Math.round(clockMs('b')) : null;
+  botSyncChain = botSyncChain.then(async () => {
+    const {error} = await sb.rpc('sync_bot_match', {gid: id, p_moves: moves, p_color: col, p_name: name, p_white_ms: wms, p_black_ms: bms});
+    if (error && !botSyncWarned) { botSyncWarned = true; console.warn('Could not sync bot game for spectators:', error.message); }
+  }).catch(() => {});
+  return botSyncChain;
+}
+// a bot_matches row, shaped like a games row so the watch screen can use it (the bot's side has no account id)
+function botRowFrom(r) {
+  const mv = Array.isArray(r.moves) ? r.moves : [], hw = r.human_color !== 'b', tc = r.time_control || 0;
+  let res = r.result;
+  if (res && r.human_color === 'b') res = res === '1-0' ? '0-1' : res === '0-1' ? '1-0' : res;   // stored from the human's point of view
+  return {id: r.id, bot: true, bot_name: r.bot_name || 'Bot', bot_rating: r.bot_rating, status: r.status === 'finished' ? 'finished' : 'active',
+    white_id: hw ? r.account_id : null, black_id: hw ? null : r.account_id, moves: mv, turn: mv.length % 2 ? 'b' : 'w',
+    time_control: tc, white_ms: r.white_ms != null ? +r.white_ms : tc * 1000, black_ms: r.black_ms != null ? +r.black_ms : tc * 1000,
+    turn_started_at: r.updated_at, updated_at: r.updated_at, result: res || '*', reason: 'finished', draw_offer: null};
+}
+async function fetchLiveBots() {
+  try {
+    const {data, error} = await sb.rpc('live_bot_matches');
+    if (error || !data) return [];
+    return data.filter(r => !S.user || r.account_id !== S.user.id).map(botRowFrom);
+  } catch (e) { return []; }
 }
 async function settleBot(result) {
   if (!S.botMatchId || S.botResultSettled) return;
@@ -4425,9 +4464,9 @@ function commit(from, to, promo) {
   if (end) S.over = end;
   if (S.mode !== 'online') clockAfterMove(m.color);
   render();
-  if (end && S.mode === 'ai' && S.botMatchId) settleBot(end.result);
+  if (end && S.mode === 'ai' && S.botMatchId) syncBotRow().then(() => settleBot(end.result));
   if (S.mode === 'online') sendMove(end);
-  else { coachLive(); if (S.mode === 'ai' && !end) aiMove(); }
+  else { coachLive(); if (S.mode === 'ai' && S.botMatchId && !end) syncBotRow(); if (S.mode === 'ai' && !end) aiMove(); }
 }
 
 /* ═════════════ Strong bots: Stockfish for ratings above 1000 ═════════════
@@ -4521,7 +4560,8 @@ function aiMove() {
       const end = gameEnd(g);
       if (end) S.over = end;
       clockAfterMove(mv.color);
-      if (end && S.botMatchId) settleBot(end.result);
+      if (end && S.botMatchId) syncBotRow().then(() => settleBot(end.result));
+      else if (S.botMatchId) syncBotRow();
     }
     render();
     if (S.premove && !S.over) setTimeout(executePremove, 0);
@@ -5609,21 +5649,23 @@ function miniBoardHtml(moves) {
 
 async function liveGameOf(pid) {
   const {data} = await sb.from('games').select('*').eq('status', 'active').or(`white_id.eq.${pid},black_id.eq.${pid}`).order('updated_at', {ascending: false}).limit(1);
-  return data && data[0] && data[0].white_id && data[0].black_id ? data[0] : null;
+  if (data && data[0] && data[0].white_id && data[0].black_id) return data[0];
+  return (await fetchLiveBots()).find(b => b.white_id === pid || b.black_id === pid) || null;
 }
 
+const sideTag = (id, g) => id ? `<b data-pid="${id}">${esc(nameOf(id))}</b>` : `<b>${esc((g && g.bot_name) || 'Bot')}</b>`;
 async function loadLiveGames() {
   const ul = $('live-games');
   if (!ul || !sb) return;
   const {data, error} = await sb.from('games').select('*').eq('status', 'active').order('updated_at', {ascending: false}).limit(12);
   if (!$('live-games')) return;
   if (error) { ul.innerHTML = '<li class="muted">Could not load live games.</li>'; return; }
-  const rows = (data || []).filter(g => g.white_id && g.black_id);
+  const rows = (data || []).filter(g => g.white_id && g.black_id).concat(await fetchLiveBots());   // plus quick-match games against a bot
   S.liveRows = {}; rows.forEach(g => { S.liveRows[g.id] = g; });
   await fetchProfiles(rows.flatMap(g => [g.white_id, g.black_id]));
   if (!$('live-games')) return;
   const mine = g => S.user && (g.white_id === S.user.id || g.black_id === S.user.id);
-  ul.innerHTML = rows.length ? rows.map(g => `<li><span class="who"><b data-pid="${g.white_id}">${esc(nameOf(g.white_id))}</b> vs <b data-pid="${g.black_id}">${esc(nameOf(g.black_id))}</b><span class="sub">${esc(tcLabel(g.time_control))}, ${Math.ceil(g.moves.length / 2)} moves</span></span><button class="btn sm" data-live="${g.id}" type="button">${mine(g) ? 'Open' : 'Watch'}</button></li>`).join('')
+  ul.innerHTML = rows.length ? rows.map(g => `<li><span class="who">${sideTag(g.white_id, g)} vs ${sideTag(g.black_id, g)}<span class="sub">${esc(tcLabel(g.time_control))}, ${Math.ceil(g.moves.length / 2)} moves</span></span><button class="btn sm" data-live="${g.id}" type="button">${mine(g) ? 'Open' : 'Watch'}</button></li>`).join('')
     : `<li class="muted">No live games right now.${isPalAdmin() ? ' (Admin note: if games are running but do not show here, run spectate.sql once in the Supabase SQL editor.)' : ''}</li>`;
 }
 
@@ -5637,7 +5679,7 @@ async function openWatch(row) {
   S.endPlayed = S.over; S.premove = null;
   showView('game'); render();
   const id = row.id;
-  S.online.channel = sb.channel('watch-' + id)
+  if (!row.bot) S.online.channel = sb.channel('watch-' + id)
     .on('postgres_changes', {event: 'UPDATE', schema: 'public', table: 'games', filter: 'id=eq.' + id}, pl => applyRow(pl.new))
     .subscribe();
   S.online.poll = setInterval(pollOnline, 2500);
@@ -5666,7 +5708,7 @@ async function openProfile(id) {
   h += '<div class="prof-h">Right now</div>';
   if (live) {
     const mineLive = !!S.user && (live.white_id === S.user.id || live.black_id === S.user.id);
-    h += `<div class="prof-live">${miniBoardHtml(live.moves)}<div class="pl-info"><div><b data-pid="${live.white_id}">${esc(nameOf(live.white_id))}</b> (White)<br>vs <b data-pid="${live.black_id}">${esc(nameOf(live.black_id))}</b> (Black)</div><div class="prof-sub">${esc(tcLabel(live.time_control))}, move ${Math.ceil(live.moves.length / 2) || 1}</div><button class="btn primary sm" id="prof-watch" type="button">${mineLive ? 'Open game' : 'Watch game'}</button></div></div>`;
+    h += `<div class="prof-live">${miniBoardHtml(live.moves)}<div class="pl-info"><div>${sideTag(live.white_id, live)} (White)<br>vs ${sideTag(live.black_id, live)} (Black)</div><div class="prof-sub">${esc(tcLabel(live.time_control))}, move ${Math.ceil(live.moves.length / 2) || 1}</div><button class="btn primary sm" id="prof-watch" type="button">${mineLive ? 'Open game' : 'Watch game'}</button></div></div>`;
   } else h += `<p class="muted">${isMe ? 'You are' : esc(p.username) + ' is'} not in a live game.</p>`;
   if (social) h += '<div class="prof-act"><button class="btn sm" id="prof-chal" type="button">Challenge</button><button class="btn sm ghost" id="prof-friend" type="button">Add friend</button></div>';
   body.innerHTML = h;
@@ -5705,7 +5747,7 @@ function playerInfo(color) {
     return {name: 'Computer', sub: ['', 'Easy', 'Medium', 'Hard'][S.aiLevel]};
   }
   const row = S.online.row, id = color === 'w' ? row.white_id : row.black_id;
-  if (!id) return {name: 'Waiting for opponent…'};
+  if (!id) return row.bot ? {name: row.bot_name || 'Bot', sub: String(row.bot_rating), rating: row.bot_rating} : {name: 'Waiting for opponent…'};
   const p = PC[id];
   return {id, name: p ? p.username : 'Player', sub: p ? String(ratingOf(p, row.time_control)) : '', rating: p && !p.is_guest ? ratingOf(p, row.time_control) : null};
 }
@@ -6166,7 +6208,7 @@ function statsHtml() {
 }
 function renderCoach() {
   const el = $('coach'), st = $('stats'); if (!el || !st) return;
-  const live = !S.review && (S.mode === 'ai' || S.mode === 'local') && S.game;
+  const live = !S.review && (S.mode === 'ai' || S.mode === 'local') && !S.botMatchId && S.game;
   el.classList.toggle('hidden', !(S.review || live));
   st.classList.toggle('hidden', !S.review);
   if (S.review) { el.innerHTML = coachHtml(); st.innerHTML = statsHtml(); reviewFloat(); }
@@ -6194,7 +6236,7 @@ function reviewFloat() {
   const m = S.game.history({verbose: true})[rv.ply - 1]; if (m) floatEval(m.to, a.evalW);
 }
 function coachLive() {
-  if (!COACH.on || (S.mode !== 'ai' && S.mode !== 'local') || !S.game) return;
+  if (!COACH.on || (S.mode !== 'ai' && S.mode !== 'local') || S.botMatchId || !S.game) return;
   const g = S.game, hist = g.history(), ply = hist.length, id = ++COACH.seq;
   COACH.game = g; COACH.msg = {busy: true}; renderCoach();
   setTimeout(() => {
