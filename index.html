@@ -2476,13 +2476,23 @@ function startLocal(tc) {
   showView('game'); render();
 }
 
+// true or false when we can tell, null if the lookup failed (then the database decides)
+async function areFriends(id) {
+  const uid = S.user.id;
+  const {data, error} = await sb.from('friendships').select('id').eq('status', 'accepted')
+    .or(`and(requester_id.eq.${uid},addressee_id.eq.${id}),and(requester_id.eq.${id},addressee_id.eq.${uid})`).limit(1);
+  return error ? null : data.length > 0;
+}
 async function createGame(pref, tc, invitedId) {
   const c = pref === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : pref;
   const row = {creator_id: S.user.id, time_control: tc || 0};
   row[c === 'w' ? 'white_id' : 'black_id'] = S.user.id;
-  if (invitedId) row.invited_id = invitedId;
+  if (invitedId) {
+    if (await areFriends(invitedId) === false) return toast('You need to be friends to challenge someone. Send them a friend request first.', true);
+    row.invited_id = invitedId;
+  }
   const {data, error} = await sb.from('games').insert(row).select().single();
-  if (error) return toast(error.message, true);
+  if (error) return toast(/row-level security/i.test(error.message) ? 'You need to be friends to challenge someone. Send them a friend request first.' : error.message, true);
   if (invitedId) toast('Challenge sent. They will see it in their lobby.');
   openOnline(data);
 }
