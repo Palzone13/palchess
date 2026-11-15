@@ -1690,7 +1690,8 @@ function pzWin(msg) {
 function pzHelp(full) {
   const g = PZ.g; if (!g || PZ.busy || PZ.solved) return;
   const pz = PUZZLES[PZ.i], all = g.moves({verbose: true});
-  const mv = pz.tac ? all.find(m => m.from + m.to === pz.sol[0]) : all.find(m => m.san === pzMates(g, PZ.left));
+  const san = pz.tac ? null : pzMates(g, PZ.left);   // search once, not once per move
+  const mv = pz.tac ? all.find(m => m.from + m.to === pz.sol[0]) : all.find(m => m.san === san);
   if (!mv) return;
   PZ.sel = null; PZ.hint = full ? [mv.from, mv.to] : [mv.from];
   PZ.msg = full ? 'One answer is ' + mv.san + '.' : 'Look at the highlighted piece.';
